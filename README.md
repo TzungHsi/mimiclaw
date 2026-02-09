@@ -25,26 +25,7 @@ MimiClaw turns a tiny ESP32-S3 board into a personal AI assistant. Plug it into 
 
 ## How It Works
 
-```
-                         ┌─────────────── Agent Loop ───────────────┐
-                         │                                          │
- ┌───────────┐     ┌─────▼─────┐     ┌─────────┐     ┌─────────┐  │
- │ Channels  │     │  Message   │     │  Claude  │     │  Tools  │  │
- │           │────▶│  Queue     │────▶│  (LLM)   │────▶│         │──┘
- │ Telegram  │     └───────────┘     └────┬─────┘     └────┬────┘
- │ WebSocket │◀──────────────────────────-│                │
- └───────────┘        Response            │                │
-                                    ┌─────▼────────────────▼────┐
-                                    │        Context            │
-                                    │  ┌──────────┐ ┌────────┐  │
-                                    │  │  Memory   │ │ Skills │  │
-                                    │  │ SOUL.md   │ │  OTA   │  │
-                                    │  │ USER.md   │ │  CLI   │  │
-                                    │  │ MEMORY.md │ │  ...   │  │
-                                    │  └──────────┘ └────────┘  │
-                                    └───────────────────────────┘
-                                          ESP32-S3 Flash
-```
+![](assets/mimiclaw.png)
 
 You send a message on Telegram. The ESP32-S3 picks it up over WiFi, feeds it into an agent loop — Claude thinks, calls tools, reads memory — and sends the reply back. Everything runs on a single $5 chip with all your data stored locally on flash.
 
