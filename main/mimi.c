@@ -19,7 +19,7 @@
 #include "memory/session_mgr.h"
 #include "gateway/ws_server.h"
 #include "cli/serial_cli.h"
-#include "display/display_manager.h"
+#include "display_manager.h"
 #include "proxy/http_proxy.h"
 #include "tools/tool_registry.h"
 
