@@ -25,45 +25,60 @@
 
 static const char *TAG = "mimi";
 
-/* --- T-Display-S3 Display & Status Logic --- */
+/* --- T-Display-S3 Display Pins (8-bit Parallel) --- */
 #define LCD_PIN_BK_LIGHT       38
 #define LCD_PIN_RST            5
+#define LCD_PIN_CS             6
+#define LCD_PIN_DC             7
+#define LCD_PIN_WR             8
+#define LCD_PIN_RD             9
+
+// Data pins for 8-bit parallel bus
+static const int lcd_data_pins[] = {39, 40, 41, 42, 45, 46, 47, 48};
 
 /**
- * Update the system status on console (and placeholder for LCD drawing)
- * In a full implementation, you would use LVGL or esp_lcd here.
+ * T-Display-S3 Hardware Init
+ * This function turns on the backlight and sets the control pins to idle state.
+ * To actually draw, one would need to use the 'esp_lcd' component with the ST7789 driver.
  */
-void display_update_status(bool wifi_connected, bool tg_active, const char *status_text) {
-    ESP_LOGI("DISPLAY", "┌──────────────────────────────────────┐");
-    ESP_LOGI("DISPLAY", "│ WiFi: %-12s | TG: %-10s │", 
-             wifi_connected ? "CONNECTED" : "DISCONNECTED", 
-             tg_active ? "ACTIVE" : "INACTIVE");
-    ESP_LOGI("DISPLAY", "│ Status: %-28s │", status_text);
-    ESP_LOGI("DISPLAY", "└──────────────────────────────────────┘");
-}
-
 void display_init(void) {
     ESP_LOGI(TAG, "Initializing T-Display-S3 Display Hardware...");
     
-    // Configure Backlight
+    // 1. Backlight
     gpio_config_t bk_conf = {
         .pin_bit_mask = 1ULL << LCD_PIN_BK_LIGHT,
         .mode = GPIO_MODE_OUTPUT,
     };
     gpio_config(&bk_conf);
-    gpio_set_level(LCD_PIN_BK_LIGHT, 1); // Turn on backlight
+    gpio_set_level(LCD_PIN_BK_LIGHT, 1);
 
-    // Reset LCD
-    gpio_config_t rst_conf = {
-        .pin_bit_mask = 1ULL << LCD_PIN_RST,
+    // 2. Control Pins
+    uint64_t ctrl_mask = (1ULL << LCD_PIN_RST) | (1ULL << LCD_PIN_CS) | 
+                         (1ULL << LCD_PIN_DC) | (1ULL << LCD_PIN_WR) | (1ULL << LCD_PIN_RD);
+    gpio_config_t ctrl_conf = {
+        .pin_bit_mask = ctrl_mask,
         .mode = GPIO_MODE_OUTPUT,
     };
-    gpio_config(&rst_conf);
+    gpio_config(&ctrl_conf);
+
+    // 3. Reset Sequence
+    gpio_set_level(LCD_PIN_CS, 1);
+    gpio_set_level(LCD_PIN_RD, 1);
+    gpio_set_level(LCD_PIN_WR, 1);
+    
     gpio_set_level(LCD_PIN_RST, 0);
     vTaskDelay(pdMS_TO_TICKS(100));
     gpio_set_level(LCD_PIN_RST, 1);
-    
-    display_update_status(false, false, "System Booting...");
+    vTaskDelay(pdMS_TO_TICKS(100));
+
+    ESP_LOGI(TAG, "LCD Hardware Ready (Backlight ON).");
+}
+
+void display_update_status(bool wifi_connected, bool tg_active, const char *status_text) {
+    ESP_LOGI("DISPLAY", "WiFi: %s | Telegram: %s | Status: %s", 
+             wifi_connected ? "ON" : "OFF", 
+             tg_active ? "ON" : "OFF", 
+             status_text);
 }
 
 /* --- Core Infrastructure --- */
@@ -131,15 +146,12 @@ void app_main(void)
     ESP_LOGI(TAG, "  MimiClaw - ESP32-S3 AI Agent");
     ESP_LOGI(TAG, "========================================");
 
-    /* Initialize Display */
     display_init();
 
-    /* Phase 1: Core infrastructure */
     ESP_ERROR_CHECK(init_nvs());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     ESP_ERROR_CHECK(init_spiffs());
 
-    /* Initialize subsystems */
     ESP_ERROR_CHECK(message_bus_init());
     ESP_ERROR_CHECK(memory_store_init());
     ESP_ERROR_CHECK(session_mgr_init());
@@ -150,27 +162,20 @@ void app_main(void)
     ESP_ERROR_CHECK(tool_registry_init());
     ESP_ERROR_CHECK(agent_loop_init());
 
-    /* Start Serial CLI first (works without WiFi) */
     ESP_ERROR_CHECK(serial_cli_init());
     display_update_status(false, false, "Waiting for WiFi...");
 
-    /* Start WiFi */
     esp_err_t wifi_err = wifi_manager_start();
     if (wifi_err == ESP_OK) {
-        ESP_LOGI(TAG, "Scanning nearby APs on boot...");
-        wifi_manager_scan_and_print();
-        ESP_LOGI(TAG, "Waiting for WiFi connection...");
         if (wifi_manager_wait_connected(30000) == ESP_OK) {
             ESP_LOGI(TAG, "WiFi connected: %s", wifi_manager_get_ip());
             display_update_status(true, false, "WiFi Connected");
 
-            /* Start network-dependent services */
             ESP_ERROR_CHECK(telegram_bot_start());
             ESP_ERROR_CHECK(agent_loop_start());
             ESP_ERROR_CHECK(ws_server_start());
             display_update_status(true, true, "System Ready");
 
-            /* Outbound dispatch task */
             xTaskCreatePinnedToCore(
                 outbound_dispatch_task, "outbound",
                 MIMI_OUTBOUND_STACK, NULL,
@@ -178,11 +183,9 @@ void app_main(void)
 
             ESP_LOGI(TAG, "All services started!");
         } else {
-            ESP_LOGW(TAG, "WiFi connection timeout.");
             display_update_status(false, false, "WiFi Timeout");
         }
     } else {
-        ESP_LOGW(TAG, "No WiFi credentials.");
         display_update_status(false, false, "WiFi Config Missing");
     }
 
