@@ -8,7 +8,6 @@
 #include "esp_heap_caps.h"
 #include "esp_spiffs.h"
 #include "nvs_flash.h"
-#include "driver/gpio.h"
 
 #include "mimi_config.h"
 #include "bus/message_bus.h"
@@ -24,35 +23,6 @@
 #include "tools/tool_registry.h"
 
 static const char *TAG = "mimi";
-
-/* --- T-Display-S3 Display Minimal Implementation --- */
-#define LCD_PIN_BK_LIGHT       38
-#define LCD_PIN_RST            5
-
-void display_init(void) {
-    ESP_LOGI(TAG, "Initializing T-Display-S3 Display...");
-    gpio_config_t bk_gpio_config = {
-        .mode = GPIO_MODE_OUTPUT,
-        .pin_bit_mask = 1ULL << LCD_PIN_BK_LIGHT,
-    };
-    gpio_config(&bk_gpio_config);
-    gpio_set_level(LCD_PIN_BK_LIGHT, 1); 
-
-    gpio_config_t rst_gpio_config = {
-        .mode = GPIO_MODE_OUTPUT,
-        .pin_bit_mask = 1ULL << LCD_PIN_RST,
-    };
-    gpio_config(&rst_gpio_config);
-    gpio_set_level(LCD_PIN_RST, 0);
-    vTaskDelay(pdMS_TO_TICKS(100));
-    gpio_set_level(LCD_PIN_RST, 1);
-}
-
-void display_update_status(bool wifi, bool tg, const char *status) {
-    ESP_LOGI("display", "Status: WiFi:%d TG:%d | %s", wifi, tg, status);
-}
-
-/* --- Core Logic --- */
 
 static esp_err_t init_nvs(void)
 {
@@ -117,9 +87,6 @@ void app_main(void)
     ESP_LOGI(TAG, "  MimiClaw - ESP32-S3 AI Agent");
     ESP_LOGI(TAG, "========================================");
 
-    display_init();
-    display_update_status(false, false, "Initializing...");
-
     ESP_ERROR_CHECK(init_nvs());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     ESP_ERROR_CHECK(init_spiffs());
@@ -135,18 +102,15 @@ void app_main(void)
     ESP_ERROR_CHECK(agent_loop_init());
 
     ESP_ERROR_CHECK(serial_cli_init());
-    display_update_status(false, false, "Starting WiFi...");
 
     esp_err_t wifi_err = wifi_manager_start();
     if (wifi_err == ESP_OK) {
         if (wifi_manager_wait_connected(30000) == ESP_OK) {
             ESP_LOGI(TAG, "WiFi connected: %s", wifi_manager_get_ip());
-            display_update_status(true, false, "WiFi Connected");
 
             ESP_ERROR_CHECK(telegram_bot_start());
             ESP_ERROR_CHECK(agent_loop_start());
             ESP_ERROR_CHECK(ws_server_start());
-            display_update_status(true, true, "System Ready");
 
             xTaskCreatePinnedToCore(
                 outbound_dispatch_task, "outbound",
@@ -154,11 +118,7 @@ void app_main(void)
                 MIMI_OUTBOUND_PRIO, NULL, MIMI_OUTBOUND_CORE);
 
             ESP_LOGI(TAG, "All services started!");
-        } else {
-            display_update_status(false, false, "WiFi Timeout");
         }
-    } else {
-        display_update_status(false, false, "No WiFi Config");
     }
 
     ESP_LOGI(TAG, "MimiClaw ready. Type 'help' for CLI commands.");
