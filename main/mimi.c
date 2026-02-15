@@ -8,6 +8,7 @@
 #include "esp_heap_caps.h"
 #include "esp_spiffs.h"
 #include "nvs_flash.h"
+#include "driver/gpio.h"
 
 #include "mimi_config.h"
 #include "bus/message_bus.h"
@@ -19,11 +20,39 @@
 #include "memory/session_mgr.h"
 #include "gateway/ws_server.h"
 #include "cli/serial_cli.h"
-#include "display_manager.h"
 #include "proxy/http_proxy.h"
 #include "tools/tool_registry.h"
 
 static const char *TAG = "mimi";
+
+/* --- T-Display-S3 Display Minimal Implementation --- */
+#define LCD_PIN_BK_LIGHT       38
+#define LCD_PIN_RST            5
+
+void display_init(void) {
+    ESP_LOGI(TAG, "Initializing T-Display-S3 Display...");
+    gpio_config_t bk_gpio_config = {
+        .mode = GPIO_MODE_OUTPUT,
+        .pin_bit_mask = 1ULL << LCD_PIN_BK_LIGHT,
+    };
+    gpio_config(&bk_gpio_config);
+    gpio_set_level(LCD_PIN_BK_LIGHT, 1); 
+
+    gpio_config_t rst_gpio_config = {
+        .mode = GPIO_MODE_OUTPUT,
+        .pin_bit_mask = 1ULL << LCD_PIN_RST,
+    };
+    gpio_config(&rst_gpio_config);
+    gpio_set_level(LCD_PIN_RST, 0);
+    vTaskDelay(pdMS_TO_TICKS(100));
+    gpio_set_level(LCD_PIN_RST, 1);
+}
+
+void display_update_status(bool wifi, bool tg, const char *status) {
+    ESP_LOGI("display", "Status: WiFi:%d TG:%d | %s", wifi, tg, status);
+}
+
+/* --- Core Logic --- */
 
 static esp_err_t init_nvs(void)
 {
@@ -58,7 +87,6 @@ static esp_err_t init_spiffs(void)
     return ESP_OK;
 }
 
-/* Outbound dispatch task: reads from outbound queue and routes to channels */
 static void outbound_dispatch_task(void *arg)
 {
     ESP_LOGI(TAG, "Outbound dispatch started");
@@ -83,27 +111,19 @@ static void outbound_dispatch_task(void *arg)
 
 void app_main(void)
 {
-    /* Silence noisy components */
     esp_log_level_set("esp-x509-crt-bundle", ESP_LOG_WARN);
 
     ESP_LOGI(TAG, "========================================");
     ESP_LOGI(TAG, "  MimiClaw - ESP32-S3 AI Agent");
     ESP_LOGI(TAG, "========================================");
 
-    /* Print memory info */
-    ESP_LOGI(TAG, "Internal free: %d bytes",
-             (int)heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
-    ESP_LOGI(TAG, "PSRAM free:    %d bytes",
-             (int)heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+    display_init();
+    display_update_status(false, false, "Initializing...");
 
-    /* Phase 1: Core infrastructure */
     ESP_ERROR_CHECK(init_nvs());
-    display_manager_init();
-    display_manager_set_status("Initializing...");
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     ESP_ERROR_CHECK(init_spiffs());
 
-    /* Initialize subsystems */
     ESP_ERROR_CHECK(message_bus_init());
     ESP_ERROR_CHECK(memory_store_init());
     ESP_ERROR_CHECK(session_mgr_init());
@@ -114,27 +134,20 @@ void app_main(void)
     ESP_ERROR_CHECK(tool_registry_init());
     ESP_ERROR_CHECK(agent_loop_init());
 
-    /* Start Serial CLI first (works without WiFi) */
     ESP_ERROR_CHECK(serial_cli_init());
-    display_manager_set_status("Starting WiFi...");
+    display_update_status(false, false, "Starting WiFi...");
 
-    /* Start WiFi */
     esp_err_t wifi_err = wifi_manager_start();
     if (wifi_err == ESP_OK) {
-        ESP_LOGI(TAG, "Scanning nearby APs on boot...");
-        wifi_manager_scan_and_print();
-        ESP_LOGI(TAG, "Waiting for WiFi connection...");
         if (wifi_manager_wait_connected(30000) == ESP_OK) {
             ESP_LOGI(TAG, "WiFi connected: %s", wifi_manager_get_ip());
-            display_manager_update(true, false, "WiFi Connected");
+            display_update_status(true, false, "WiFi Connected");
 
-            /* Start network-dependent services */
             ESP_ERROR_CHECK(telegram_bot_start());
             ESP_ERROR_CHECK(agent_loop_start());
             ESP_ERROR_CHECK(ws_server_start());
-            display_manager_update(true, true, "System Ready");
+            display_update_status(true, true, "System Ready");
 
-            /* Outbound dispatch task */
             xTaskCreatePinnedToCore(
                 outbound_dispatch_task, "outbound",
                 MIMI_OUTBOUND_STACK, NULL,
@@ -142,10 +155,10 @@ void app_main(void)
 
             ESP_LOGI(TAG, "All services started!");
         } else {
-            ESP_LOGW(TAG, "WiFi connection timeout. Check MIMI_SECRET_WIFI_SSID in mimi_secrets.h");
+            display_update_status(false, false, "WiFi Timeout");
         }
     } else {
-        ESP_LOGW(TAG, "No WiFi credentials. Set MIMI_SECRET_WIFI_SSID in mimi_secrets.h");
+        display_update_status(false, false, "No WiFi Config");
     }
 
     ESP_LOGI(TAG, "MimiClaw ready. Type 'help' for CLI commands.");
