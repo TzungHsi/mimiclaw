@@ -19,6 +19,7 @@
 #include "memory/session_mgr.h"
 #include "gateway/ws_server.h"
 #include "cli/serial_cli.h"
+#include "display/display_manager.h"
 #include "proxy/http_proxy.h"
 #include "tools/tool_registry.h"
 
@@ -97,6 +98,8 @@ void app_main(void)
 
     /* Phase 1: Core infrastructure */
     ESP_ERROR_CHECK(init_nvs());
+    display_manager_init();
+    display_manager_set_status("Initializing...");
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     ESP_ERROR_CHECK(init_spiffs());
 
@@ -113,6 +116,7 @@ void app_main(void)
 
     /* Start Serial CLI first (works without WiFi) */
     ESP_ERROR_CHECK(serial_cli_init());
+    display_manager_set_status("Starting WiFi...");
 
     /* Start WiFi */
     esp_err_t wifi_err = wifi_manager_start();
@@ -122,11 +126,13 @@ void app_main(void)
         ESP_LOGI(TAG, "Waiting for WiFi connection...");
         if (wifi_manager_wait_connected(30000) == ESP_OK) {
             ESP_LOGI(TAG, "WiFi connected: %s", wifi_manager_get_ip());
+            display_manager_update(true, false, "WiFi Connected");
 
             /* Start network-dependent services */
             ESP_ERROR_CHECK(telegram_bot_start());
             ESP_ERROR_CHECK(agent_loop_start());
             ESP_ERROR_CHECK(ws_server_start());
+            display_manager_update(true, true, "System Ready");
 
             /* Outbound dispatch task */
             xTaskCreatePinnedToCore(
