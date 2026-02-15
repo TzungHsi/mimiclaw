@@ -8,6 +8,7 @@
 #include "esp_heap_caps.h"
 #include "esp_spiffs.h"
 #include "nvs_flash.h"
+#include "driver/gpio.h"
 
 #include "mimi_config.h"
 #include "bus/message_bus.h"
@@ -86,6 +87,14 @@ void app_main(void)
     ESP_LOGI(TAG, "========================================");
     ESP_LOGI(TAG, "  MimiClaw - ESP32-S3 AI Agent");
     ESP_LOGI(TAG, "========================================");
+
+    /* T-Display-S3 Backlight (GPIO 38) */
+    gpio_config_t bk_conf = {
+        .pin_bit_mask = 1ULL << 38,
+        .mode = GPIO_MODE_OUTPUT,
+    };
+    gpio_config(&bk_conf);
+    gpio_set_level(38, 1);
 
     ESP_ERROR_CHECK(init_nvs());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
