@@ -24,9 +24,9 @@ static const char *TAG = "display";
 #define LCD_D6_PIN          47
 #define LCD_D7_PIN          48
 
-// Screen dimensions
-#define LCD_H_RES           320
-#define LCD_V_RES           170
+// Screen dimensions (after swap_xy, width and height are swapped)
+#define LCD_H_RES           170
+#define LCD_V_RES           320
 
 // Simple 16-bit color definitions (RGB565)
 #define COLOR_BLACK         0x0000
@@ -211,6 +211,13 @@ void display_manager_init(void) {
     // Initialize panel
     ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
     ESP_ERROR_CHECK(esp_lcd_panel_init(panel_handle));
+    
+    // T-Display-S3 specific settings
+    ESP_ERROR_CHECK(esp_lcd_panel_invert_color(panel_handle, true));
+    ESP_ERROR_CHECK(esp_lcd_panel_swap_xy(panel_handle, true));
+    ESP_ERROR_CHECK(esp_lcd_panel_mirror(panel_handle, false, true));
+    ESP_ERROR_CHECK(esp_lcd_panel_set_gap(panel_handle, 0, 35));
+    
     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true));
     
     // Initial render
