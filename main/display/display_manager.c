@@ -127,7 +127,7 @@ static esp_err_t init_lcd_hardware(void) {
         .lcd_cmd_bits = 8,
         .lcd_param_bits = 8,
         .flags = {
-            .swap_color_bytes = false,
+            .swap_color_bytes = true,  // Swap RGB565 byte order
         },
     };
     ESP_ERROR_CHECK(esp_lcd_new_panel_io_i80(i80_bus, &io_config, &io_handle));
