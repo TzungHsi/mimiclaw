@@ -12,15 +12,19 @@ static const char *TAG = "display_test";
 
 /**
  * T-Display-S3 Pin Definitions (8-bit Parallel)
+ * Based on official example: https://github.com/hiruna/esp-idf-t-display-s3
  */
 #define LCD_PIN_BK_LIGHT       38
 #define LCD_PIN_RST            5
 #define LCD_PIN_CS             6
 #define LCD_PIN_DC             7
 #define LCD_PIN_PCLK           8
+#define LCD_PIN_RD             9
 
-#define LCD_H_RES              170
-#define LCD_V_RES              320
+// IMPORTANT: These are the ST7789 native dimensions (before swap_xy)
+// After swap_xy, the display will be 170x320 (portrait)
+#define LCD_H_RES              320
+#define LCD_V_RES              170
 
 // Color definitions (RGB565)
 #define COLOR_BLACK     0x0000
@@ -123,16 +127,18 @@ static void draw_gradient(void)
 
 esp_err_t display_test_init(void)
 {
-    ESP_LOGI(TAG, "=== T-Display-S3 LCD Test ===");
-    ESP_LOGI(TAG, "Resolution: %dx%d", LCD_H_RES, LCD_V_RES);
+    ESP_LOGI(TAG, "=== T-Display-S3 LCD Test (Official Config) ===");
+    ESP_LOGI(TAG, "ST7789 Native Resolution: %dx%d", LCD_H_RES, LCD_V_RES);
+    ESP_LOGI(TAG, "After swap_xy: 170x320 (portrait)");
     
-    // Allocate test buffer
-    test_buffer = heap_caps_malloc(LCD_H_RES * LCD_V_RES * sizeof(uint16_t), MALLOC_CAP_DMA);
+    // Allocate test buffer from PSRAM for DMA
+    test_buffer = heap_caps_malloc(LCD_H_RES * LCD_V_RES * sizeof(uint16_t), MALLOC_CAP_DMA | MALLOC_CAP_SPIRAM);
     if (!test_buffer) {
-        ESP_LOGE(TAG, "Failed to allocate test buffer");
+        ESP_LOGE(TAG, "Failed to allocate test buffer from PSRAM");
         return ESP_ERR_NO_MEM;
     }
     memset(test_buffer, 0, LCD_H_RES * LCD_V_RES * sizeof(uint16_t));
+    ESP_LOGI(TAG, "Allocated %d bytes from PSRAM for framebuffer", LCD_H_RES * LCD_V_RES * sizeof(uint16_t));
     
     // 1. Backlight Init
     ESP_LOGI(TAG, "Step 1: Initializing backlight (GPIO %d)", LCD_PIN_BK_LIGHT);
@@ -157,7 +163,7 @@ esp_err_t display_test_init(void)
     vTaskDelay(pdMS_TO_TICKS(100));
     ESP_LOGI(TAG, "LCD reset complete");
     
-    // 3. Initialize I80 bus
+    // 3. Initialize I80 bus (with official parameters)
     ESP_LOGI(TAG, "Step 3: Initializing I80 bus");
     esp_lcd_i80_bus_handle_t i80_bus = NULL;
     esp_lcd_i80_bus_config_t bus_config = {
@@ -168,18 +174,20 @@ esp_err_t display_test_init(void)
             39, 40, 41, 42, 45, 46, 47, 48
         },
         .bus_width = 8,
-        .max_transfer_bytes = LCD_H_RES * LCD_V_RES * sizeof(uint16_t),
+        .max_transfer_bytes = LCD_H_RES * 100 * sizeof(uint16_t),  // 100 lines at a time
+        .psram_trans_align = 64,  // IMPORTANT: Higher alignment for better PSRAM throughput
+        .sram_trans_align = 4,
     };
     ESP_ERROR_CHECK(esp_lcd_new_i80_bus(&bus_config, &i80_bus));
-    ESP_LOGI(TAG, "I80 bus initialized");
+    ESP_LOGI(TAG, "I80 bus initialized (psram_align=64, max_transfer=100 lines)");
     
-    // 4. Initialize LCD panel IO
+    // 4. Initialize LCD panel IO (with official parameters)
     ESP_LOGI(TAG, "Step 4: Initializing LCD panel IO");
     esp_lcd_panel_io_handle_t io_handle = NULL;
     esp_lcd_panel_io_i80_config_t io_config = {
         .cs_gpio_num = LCD_PIN_CS,
-        .pclk_hz = 20 * 1000 * 1000,  // 20MHz
-        .trans_queue_depth = 10,
+        .pclk_hz = 17 * 1000 * 1000,  // 17MHz (official spec)
+        .trans_queue_depth = 20,       // Increased from 10
         .dc_levels = {
             .dc_idle_level = 0,
             .dc_cmd_level = 0,
@@ -190,28 +198,28 @@ esp_err_t display_test_init(void)
         .lcd_param_bits = 8,
     };
     ESP_ERROR_CHECK(esp_lcd_new_panel_io_i80(i80_bus, &io_config, &io_handle));
-    ESP_LOGI(TAG, "LCD panel IO initialized");
+    ESP_LOGI(TAG, "LCD panel IO initialized (17MHz, queue_depth=20)");
     
-    // 5. Initialize ST7789 panel
+    // 5. Initialize ST7789 panel (with official parameters)
     ESP_LOGI(TAG, "Step 5: Initializing ST7789 panel");
     esp_lcd_panel_dev_config_t panel_config = {
         .reset_gpio_num = LCD_PIN_RST,
-        .rgb_ele_order = LCD_RGB_ELEMENT_ORDER_BGR,
+        .rgb_ele_order = LCD_RGB_ELEMENT_ORDER_RGB,  // RGB, not BGR!
         .bits_per_pixel = 16,
     };
     ESP_ERROR_CHECK(esp_lcd_new_panel_st7789(io_handle, &panel_config, &panel_handle));
-    ESP_LOGI(TAG, "ST7789 panel initialized");
+    ESP_LOGI(TAG, "ST7789 panel initialized (RGB order)");
     
-    // 6. Configure ST7789
+    // 6. Configure ST7789 (official sequence)
     ESP_LOGI(TAG, "Step 6: Configuring ST7789");
     esp_lcd_panel_reset(panel_handle);
     esp_lcd_panel_init(panel_handle);
     esp_lcd_panel_invert_color(panel_handle, true);
-    esp_lcd_panel_swap_xy(panel_handle, true);
-    esp_lcd_panel_mirror(panel_handle, false, true);
-    esp_lcd_panel_set_gap(panel_handle, 0, 35);
+    esp_lcd_panel_swap_xy(panel_handle, true);      // Swap X/Y for portrait
+    esp_lcd_panel_mirror(panel_handle, false, true); // Mirror Y axis
+    esp_lcd_panel_set_gap(panel_handle, 0, 35);      // Vertical offset
     esp_lcd_panel_disp_on_off(panel_handle, true);
-    ESP_LOGI(TAG, "ST7789 configured");
+    ESP_LOGI(TAG, "ST7789 configured (swap_xy=true, mirror_y=true, gap_y=35)");
     
     ESP_LOGI(TAG, "=== LCD Test Initialization Complete ===");
     
