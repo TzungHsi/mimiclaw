@@ -60,6 +60,9 @@ static const char *TAG = "display_mgr";
 
 /* ── Internal State ── */
 static lv_disp_t *s_disp = NULL;
+static display_mode_t s_display_mode = DISPLAY_MODE_DASHBOARD;
+static bool s_backlight_on = true;
+static display_status_t s_status = {0};
 
 static struct {
     bool wifi;
@@ -262,4 +265,46 @@ void display_manager_set_status(const char *status)
         strncpy(s_state.status, status, sizeof(s_state.status) - 1);
     }
     display_ui_update(s_state.wifi, s_state.tg, s_state.status);
+}
+
+void display_manager_update_status(const display_status_t *status)
+{
+    if (status) {
+        memcpy(&s_status, status, sizeof(display_status_t));
+        // Update legacy state for compatibility
+        s_state.wifi = status->wifi_connected;
+        s_state.tg = status->telegram_connected;
+        snprintf(s_state.status, sizeof(s_state.status), "%s", status->system_state);
+        
+        // TODO: Update four-grid UI with new status
+        display_ui_update(status->wifi_connected, status->telegram_connected, status->system_state);
+    }
+}
+
+display_mode_t display_manager_get_mode(void)
+{
+    return s_display_mode;
+}
+
+void display_manager_set_mode(display_mode_t mode)
+{
+    if (mode < DISPLAY_MODE_COUNT) {
+        s_display_mode = mode;
+        ESP_LOGI(TAG, "Display mode changed to %d", mode);
+        // Force refresh with current status
+        display_manager_update(s_state.wifi, s_state.tg, s_state.status);
+    }
+}
+
+void display_manager_toggle_backlight(void)
+{
+    s_backlight_on = !s_backlight_on;
+    gpio_set_level(LCD_PIN_NUM_BK_LIGHT, s_backlight_on ? 1 : 0);
+    ESP_LOGI(TAG, "Backlight %s", s_backlight_on ? "ON" : "OFF");
+}
+
+void display_manager_refresh(void)
+{
+    ESP_LOGI(TAG, "Refreshing display...");
+    display_manager_update(s_state.wifi, s_state.tg, s_state.status);
 }

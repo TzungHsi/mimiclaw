@@ -22,8 +22,12 @@
 #include "proxy/http_proxy.h"
 #include "tools/tool_registry.h"
 #include "display/display_manager.h"
+#include "button_driver.h"
 
 static const char *TAG = "mimi";
+
+/* Forward declaration */
+static void button_task(void *arg);
 
 static esp_err_t init_nvs(void)
 {
@@ -139,5 +143,53 @@ void app_main(void)
         display_manager_update(false, false, "WiFi Config Missing");
     }
 
+    /* Initialize and start button polling task */
+    button_init();
+    xTaskCreate(button_task, "button_poll", 2048, NULL, 5, NULL);
+
     ESP_LOGI(TAG, "MimiClaw ready. Type 'help' for CLI commands.");
+}
+
+/* Button polling task */
+static void button_task(void *arg)
+{
+    ESP_LOGI(TAG, "Button task started");
+    
+    while (1) {
+        button_event_t event = button_poll();
+        
+        switch (event) {
+            case BUTTON_EVENT_BOOT_SHORT:
+                ESP_LOGI(TAG, "Boot button: SHORT press - switching display mode");
+                {
+                    display_mode_t current = display_manager_get_mode();
+                    display_mode_t next = (current + 1) % DISPLAY_MODE_COUNT;
+                    display_manager_set_mode(next);
+                }
+                break;
+                
+            case BUTTON_EVENT_BOOT_LONG:
+                ESP_LOGI(TAG, "Boot button: LONG press - toggling backlight");
+                display_manager_toggle_backlight();
+                break;
+                
+            case BUTTON_EVENT_USER_SHORT:
+                ESP_LOGI(TAG, "User button: SHORT press - refreshing display");
+                display_manager_refresh();
+                break;
+                
+            case BUTTON_EVENT_USER_LONG:
+                ESP_LOGI(TAG, "User button: LONG press - restarting WiFi");
+                display_manager_set_status("Restarting WiFi...");
+                // TODO: Implement WiFi restart
+                ESP_LOGW(TAG, "WiFi restart not implemented yet");
+                break;
+                
+            case BUTTON_EVENT_NONE:
+            default:
+                break;
+        }
+        
+        vTaskDelay(pdMS_TO_TICKS(10));  // Poll every 10ms
+    }
 }
