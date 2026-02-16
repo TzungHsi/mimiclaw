@@ -136,7 +136,7 @@ void app_main(void)
             display_manager_update(false, false, "WiFi Timeout");
         }
     } else {
-        display_update_status(false, false, "WiFi Config Missing");
+        display_manager_update(false, false, "WiFi Config Missing");
     }
 
     ESP_LOGI(TAG, "MimiClaw ready. Type 'help' for CLI commands.");

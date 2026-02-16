@@ -1,0 +1,10 @@
+## IDF Component Manager manifest for MimiClaw main component
+## These dependencies will be automatically downloaded to managed_components/
+dependencies:
+  ## LVGL graphics library (v8.3.x for ESP-IDF 5.x compatibility)
+  lvgl/lvgl:
+    version: "~8.3.0"
+
+  ## ESP-IDF LVGL port helper (bridges esp_lcd <-> LVGL)
+  espressif/esp_lvgl_port:
+    version: "^1.0.0"
