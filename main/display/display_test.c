@@ -4,6 +4,7 @@
 #include "esp_lcd_panel_io.h"
 #include "esp_lcd_panel_vendor.h"
 #include "esp_lcd_panel_ops.h"
+#include "esp_cache.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include <string.h>
@@ -51,6 +52,9 @@ static void fill_screen(uint16_t color)
         test_buffer[i] = color;
     }
     
+    // Flush cache to ensure DMA reads the latest data from PSRAM
+    esp_cache_msync(test_buffer, LCD_H_RES * LCD_V_RES * sizeof(uint16_t), ESP_CACHE_MSYNC_FLAG_DIR_C2M);
+    
     esp_lcd_panel_draw_bitmap(panel_handle, 0, 0, LCD_H_RES, LCD_V_RES, test_buffer);
 }
 
@@ -71,6 +75,9 @@ static void draw_stripes_horizontal(void)
         }
     }
     
+    // Flush cache
+    esp_cache_msync(test_buffer, LCD_H_RES * LCD_V_RES * sizeof(uint16_t), ESP_CACHE_MSYNC_FLAG_DIR_C2M);
+    
     esp_lcd_panel_draw_bitmap(panel_handle, 0, 0, LCD_H_RES, LCD_V_RES, test_buffer);
 }
 
@@ -90,6 +97,9 @@ static void draw_stripes_vertical(void)
         }
     }
     
+    // Flush cache
+    esp_cache_msync(test_buffer, LCD_H_RES * LCD_V_RES * sizeof(uint16_t), ESP_CACHE_MSYNC_FLAG_DIR_C2M);
+    
     esp_lcd_panel_draw_bitmap(panel_handle, 0, 0, LCD_H_RES, LCD_V_RES, test_buffer);
 }
 
@@ -107,6 +117,9 @@ static void draw_checkerboard(void)
         }
     }
     
+    // Flush cache
+    esp_cache_msync(test_buffer, LCD_H_RES * LCD_V_RES * sizeof(uint16_t), ESP_CACHE_MSYNC_FLAG_DIR_C2M);
+    
     esp_lcd_panel_draw_bitmap(panel_handle, 0, 0, LCD_H_RES, LCD_V_RES, test_buffer);
 }
 
@@ -119,11 +132,15 @@ static void draw_gradient(void)
         // Calculate color based on Y position
         uint8_t intensity = (y * 255) / LCD_V_RES;
         uint16_t color = (intensity >> 3) << 11 | (intensity >> 2) << 5 | (intensity >> 3);
+        color = SWAP_BYTES(color);  // Apply byte swap
         
         for (int x = 0; x < LCD_H_RES; x++) {
             test_buffer[y * LCD_H_RES + x] = color;
         }
     }
+    
+    // Flush cache
+    esp_cache_msync(test_buffer, LCD_H_RES * LCD_V_RES * sizeof(uint16_t), ESP_CACHE_MSYNC_FLAG_DIR_C2M);
     
     esp_lcd_panel_draw_bitmap(panel_handle, 0, 0, LCD_H_RES, LCD_V_RES, test_buffer);
 }
