@@ -1,6 +1,6 @@
-#pragma once
+#ifndef DISPLAY_MANAGER_H
+#define DISPLAY_MANAGER_H
 
-#include "esp_err.h"
 #include <stdbool.h>
 
 #ifdef __cplusplus
@@ -8,24 +8,31 @@ extern "C" {
 #endif
 
 /**
- * Initialize the T-Display-S3 LCD hardware (ST7789, 8-bit i80 bus)
- * and the LVGL graphics library. Starts a background task for UI refresh.
+ * @brief Initialize display hardware using TFT_eSPI (low power)
+ * 
+ * Initializes T-Display-S3 with single sprite buffer
+ * Similar to NerdMiner's lightweight approach
  */
-esp_err_t display_manager_init(void);
+void display_manager_init(void);
 
 /**
- * Update the system status shown on the display.
- * @param wifi_connected  WiFi connection state
- * @param tg_connected    Telegram bot connection state
- * @param status_text     Short status description (max ~30 chars)
+ * @brief Update display with current system status
+ * 
+ * @param wifi_connected WiFi connection status
+ * @param telegram_active Telegram bot status
+ * @param status_text Status message to display
  */
-void display_manager_update(bool wifi_connected, bool tg_connected, const char *status_text);
+void display_manager_update(bool wifi_connected, bool telegram_active, const char *status_text);
 
 /**
- * Convenience: update only the status text line.
+ * @brief Set status text only (lightweight update)
+ * 
+ * @param status_text Status message to display
  */
 void display_manager_set_status(const char *status_text);
 
 #ifdef __cplusplus
 }
 #endif
+
+#endif // DISPLAY_MANAGER_H
