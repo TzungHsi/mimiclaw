@@ -174,7 +174,7 @@ esp_err_t display_test_init(void)
             39, 40, 41, 42, 45, 46, 47, 48
         },
         .bus_width = 8,
-        .max_transfer_bytes = LCD_H_RES * 100 * sizeof(uint16_t),  // 100 lines at a time
+        .max_transfer_bytes = LCD_H_RES * LCD_V_RES * sizeof(uint16_t),  // Full framebuffer
         .psram_trans_align = 64,  // IMPORTANT: Higher alignment for better PSRAM throughput
         .sram_trans_align = 4,
     };
