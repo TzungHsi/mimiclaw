@@ -18,6 +18,7 @@ idf_component_register(
         "tools/tool_get_time.c"
         "tools/tool_files.c"
         "display/display_manager.c"
+        "display/display_ui.c"
         "button_driver.c"
     INCLUDE_DIRS
         "."
