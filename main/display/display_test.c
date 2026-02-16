@@ -26,15 +26,18 @@ static const char *TAG = "display_test";
 #define LCD_H_RES              320
 #define LCD_V_RES              170
 
-// Color definitions (RGB565)
-#define COLOR_BLACK     0x0000
-#define COLOR_WHITE     0xFFFF
-#define COLOR_RED       0xF800
-#define COLOR_GREEN     0x07E0
-#define COLOR_YELLOW    0xFFE0
-#define COLOR_BLUE      0x001F
-#define COLOR_CYAN      0x07FF
-#define COLOR_MAGENTA   0xF81F
+// Byte swap macro for RGB565
+#define SWAP_BYTES(x) (((x) >> 8) | ((x) << 8))
+
+// Color definitions (RGB565) - with byte swap
+#define COLOR_BLACK     SWAP_BYTES(0x0000)
+#define COLOR_WHITE     SWAP_BYTES(0xFFFF)
+#define COLOR_RED       SWAP_BYTES(0xF800)
+#define COLOR_GREEN     SWAP_BYTES(0x07E0)
+#define COLOR_YELLOW    SWAP_BYTES(0xFFE0)
+#define COLOR_BLUE      SWAP_BYTES(0x001F)
+#define COLOR_CYAN      SWAP_BYTES(0x07FF)
+#define COLOR_MAGENTA   SWAP_BYTES(0xF81F)
 
 static esp_lcd_panel_handle_t panel_handle = NULL;
 static uint16_t *test_buffer = NULL;
