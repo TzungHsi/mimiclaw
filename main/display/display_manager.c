@@ -21,8 +21,8 @@ static const char *TAG = "display";
 #define LCD_PIN_PCLK           8
 #define LCD_PIN_RD             9
 
-#define LCD_H_RES              320
-#define LCD_V_RES              170
+#define LCD_H_RES              170
+#define LCD_V_RES              320
 
 // Color definitions (RGB565)
 #define COLOR_BLACK     0x0000
