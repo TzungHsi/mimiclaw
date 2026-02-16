@@ -91,10 +91,6 @@ esp_err_t wifi_manager_init(void)
     ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_MIN_MODEM));
     ESP_LOGI(TAG, "WiFi power saving enabled (WIFI_PS_MIN_MODEM)");
 
-    /* Reduce WiFi TX power to save energy (default is 20dBm, reduce to 15dBm) */
-    ESP_ERROR_CHECK(esp_wifi_set_max_tx_power(60));  // 60 = 15dBm (unit: 0.25dBm)
-    ESP_LOGI(TAG, "WiFi TX power reduced to 15dBm for power saving");
-
     ESP_LOGI(TAG, "WiFi manager initialized");
     return ESP_OK;
 }
@@ -134,6 +130,10 @@ esp_err_t wifi_manager_start(void)
 
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_cfg));
     ESP_ERROR_CHECK(esp_wifi_start());
+
+    /* Reduce WiFi TX power to save energy (must be called after esp_wifi_start) */
+    ESP_ERROR_CHECK(esp_wifi_set_max_tx_power(60));  // 60 = 15dBm (unit: 0.25dBm)
+    ESP_LOGI(TAG, "WiFi TX power reduced to 15dBm for power saving");
 
     return ESP_OK;
 }
