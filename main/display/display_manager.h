@@ -2,6 +2,7 @@
 
 #include "esp_err.h"
 #include <stdbool.h>
+#include "lvgl.h"
 
 /**
  * Display modes for T-Display-S3
@@ -28,12 +29,14 @@ typedef struct {
 } display_status_t;
 
 /**
- * Initialize the display subsystem (T-Display-S3 ST7789).
+ * Initialize the display subsystem (T-Display-S3 ST7789 + LVGL).
+ * @return ESP_OK on success
  */
 esp_err_t display_manager_init(void);
 
 /**
  * Update the display with current system status.
+ * Must be called from LVGL task or with proper locking.
  * @param status  Pointer to display_status_t structure
  */
 void display_manager_update(const display_status_t *status);
@@ -59,3 +62,9 @@ void display_manager_toggle_backlight(void);
  * Force refresh the display.
  */
 void display_manager_refresh(void);
+
+/**
+ * Get LVGL display handle (for advanced usage).
+ * @return LVGL display handle
+ */
+lv_display_t* display_manager_get_lvgl_display(void);
