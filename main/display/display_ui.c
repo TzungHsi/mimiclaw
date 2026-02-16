@@ -21,6 +21,7 @@
 #include "esp_log.h"
 #include <stdio.h>
 #include <string.h>
+#include <inttypes.h>
 
 static const char *TAG = "display_ui";
 
@@ -215,18 +216,18 @@ void display_ui_update_dashboard(const ui_status_t *status)
         if (ui_elements.sys_detail) {
             uint32_t hours = status->uptime_seconds / 3600;
             uint32_t mins = (status->uptime_seconds % 3600) / 60;
-            snprintf(buf, sizeof(buf), "Up: %uh%um", hours, mins);
+            snprintf(buf, sizeof(buf), "Up: %"PRIu32"h%"PRIu32"m", hours, mins);
             lv_label_set_text(ui_elements.sys_detail, buf);
         }
         
         /* ── Memory Card ── */
         if (ui_elements.mem_status) {
-            snprintf(buf, sizeof(buf), "%u KB Free", status->free_heap / 1024);
+            snprintf(buf, sizeof(buf), "%"PRIu32" KB Free", status->free_heap / 1024);
             lv_label_set_text(ui_elements.mem_status, buf);
         }
         if (ui_elements.mem_detail && status->total_heap > 0) {
             uint32_t used_pct = ((status->total_heap - status->free_heap) * 100) / status->total_heap;
-            snprintf(buf, sizeof(buf), "%u%% Used", used_pct);
+            snprintf(buf, sizeof(buf), "%"PRIu32"%% Used", used_pct);
             lv_label_set_text(ui_elements.mem_detail, buf);
             
             lv_color_t color = COLOR_GREEN;
