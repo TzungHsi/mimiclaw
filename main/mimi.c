@@ -8,6 +8,7 @@
 #include "esp_heap_caps.h"
 #include "esp_spiffs.h"
 #include "nvs_flash.h"
+#include "esp_timer.h"
 
 #include "mimi_config.h"
 #include "bus/message_bus.h"
@@ -26,8 +27,12 @@
 
 static const char *TAG = "mimi";
 
-/* Forward declaration */
+/* Forward declarations */
 static void button_task(void *arg);
+static void status_update_task(void *arg);
+
+/* Boot time for uptime calculation */
+static int64_t boot_time_us = 0;
 
 static esp_err_t init_nvs(void)
 {
@@ -86,6 +91,9 @@ static void outbound_dispatch_task(void *arg)
 
 void app_main(void)
 {
+    /* Record boot time for uptime calculation */
+    boot_time_us = esp_timer_get_time();
+    
     esp_log_level_set("esp-x509-crt-bundle", ESP_LOG_WARN);
 
     ESP_LOGI(TAG, "========================================");
@@ -146,6 +154,9 @@ void app_main(void)
     /* Initialize and start button polling task */
     button_init();
     xTaskCreate(button_task, "button_poll", 4096, NULL, 5, NULL);
+    
+    /* Start status update task for four-grid dashboard */
+    xTaskCreate(status_update_task, "status_update", 4096, NULL, 4, NULL);
 
     ESP_LOGI(TAG, "MimiClaw ready. Type 'help' for CLI commands.");
 }
@@ -191,5 +202,52 @@ static void button_task(void *arg)
         }
         
         vTaskDelay(pdMS_TO_TICKS(10));  // Poll every 10ms
+    }
+}
+
+/* Status update task - updates four-grid dashboard every 2 seconds */
+static void status_update_task(void *arg)
+{
+    ESP_LOGI(TAG, "Status update task started");
+    
+    while (1) {
+        display_status_t status = {0};
+        
+        /* WiFi status */
+        status.wifi_connected = wifi_manager_is_connected();
+        status.wifi_rssi = -50;  // TODO: Implement RSSI reading
+        const char *ip = wifi_manager_get_ip();
+        if (ip) {
+            strncpy((char*)status.ip_address, ip, 15);
+            status.ip_address = ip;
+        } else {
+            status.ip_address = "0.0.0.0";
+        }
+        
+        /* Telegram status */
+        status.telegram_connected = status.wifi_connected;  // Simplified
+        
+        /* System status */
+        int64_t now_us = esp_timer_get_time();
+        status.uptime_seconds = (uint32_t)((now_us - boot_time_us) / 1000000);
+        
+        /* Memory status */
+        status.free_heap = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
+        status.total_heap = heap_caps_get_total_size(MALLOC_CAP_INTERNAL);
+        
+        /* Determine system state */
+        if (status.wifi_connected && status.telegram_connected) {
+            status.system_state = "Ready";
+        } else if (status.wifi_connected) {
+            status.system_state = "WiFi OK";
+        } else {
+            status.system_state = "Starting";
+        }
+        
+        /* Update display */
+        display_manager_update_status(&status);
+        
+        /* Update every 2 seconds */
+        vTaskDelay(pdMS_TO_TICKS(2000));
     }
 }
