@@ -145,7 +145,7 @@ void app_main(void)
 
     /* Initialize and start button polling task */
     button_init();
-    xTaskCreate(button_task, "button_poll", 2048, NULL, 5, NULL);
+    xTaskCreate(button_task, "button_poll", 4096, NULL, 5, NULL);
 
     ESP_LOGI(TAG, "MimiClaw ready. Type 'help' for CLI commands.");
 }
