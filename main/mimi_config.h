@@ -56,7 +56,9 @@
 #define MIMI_MAX_TOOL_CALLS          4
 
 /* Timezone (POSIX TZ format) */
-#define MIMI_TIMEZONE                "PST8PDT,M3.2.0,M11.1.0"
+#ifndef MIMI_TIMEZONE
+#define MIMI_TIMEZONE                "CST-8"
+#endif
 
 /* LLM */
 #define MIMI_LLM_DEFAULT_MODEL       "claude-opus-4-5"
