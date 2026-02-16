@@ -1,23 +1,46 @@
+/**
+ * display_ui.h
+ * 
+ * MimiClaw AI Agent UI for T-Display-S3
+ * Supports both minimal status display and four-grid dashboard
+ */
+
 #pragma once
 
-#include <stdbool.h>
 #include "lvgl.h"
+#include <stdbool.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+/* Four-grid dashboard status */
+typedef struct {
+    bool wifi_connected;
+    int8_t wifi_rssi;
+    const char *ip_address;
+    bool telegram_connected;
+    const char *system_state;
+    uint32_t uptime_seconds;
+    uint32_t free_heap;
+    uint32_t total_heap;
+} ui_status_t;
+
 /**
- * Create the MimiClaw status UI on the given LVGL display.
- * Call once after LVGL and display driver are fully initialized.
+ * Initialize the UI layout (called once after LVGL display is ready)
  */
 void display_ui_init(lv_disp_t *disp);
 
 /**
- * Update the UI elements with current system state.
- * Thread-safe: acquires the LVGL lock internally.
+ * Update the UI with new status (legacy minimal display)
  */
-void display_ui_update(bool wifi, bool tg, const char *status);
+void display_ui_update(bool wifi_connected, bool tg_connected, const char *status_text);
+
+/**
+ * Update the four-grid dashboard with detailed status
+ */
+void display_ui_update_dashboard(const ui_status_t *status);
 
 #ifdef __cplusplus
 }
