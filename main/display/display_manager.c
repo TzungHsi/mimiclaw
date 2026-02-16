@@ -225,7 +225,7 @@ static void ui_four_grid_init(void) {
     lbl_wifi_ip = lv_label_create(grid_wifi);
     lv_label_set_text(lbl_wifi_ip, "0.0.0.0");
     lv_obj_align(lbl_wifi_ip, LV_ALIGN_BOTTOM_MID, 0, -5);
-    lv_obj_set_style_text_font(lbl_wifi_ip, &lv_font_montserrat_10, 0);
+    lv_obj_set_style_text_font(lbl_wifi_ip, &lv_font_montserrat_14, 0);
     
     // Top-right: Telegram (85x160)
     grid_telegram = lv_obj_create(lv_screen_active());
@@ -236,7 +236,7 @@ static void ui_four_grid_init(void) {
     lv_obj_t *lbl_telegram_title = lv_label_create(grid_telegram);
     lv_label_set_text(lbl_telegram_title, LV_SYMBOL_CALL " Telegram");
     lv_obj_align(lbl_telegram_title, LV_ALIGN_TOP_MID, 0, 5);
-    lv_obj_set_style_text_font(lbl_telegram_title, &lv_font_montserrat_10, 0);
+    lv_obj_set_style_text_font(lbl_telegram_title, &lv_font_montserrat_14, 0);
     
     lbl_telegram_status = lv_label_create(grid_telegram);
     lv_label_set_text(lbl_telegram_status, "---");
@@ -251,7 +251,7 @@ static void ui_four_grid_init(void) {
     lv_obj_t *lbl_system_title = lv_label_create(grid_system);
     lv_label_set_text(lbl_system_title, LV_SYMBOL_SETTINGS " System");
     lv_obj_align(lbl_system_title, LV_ALIGN_TOP_MID, 0, 5);
-    lv_obj_set_style_text_font(lbl_system_title, &lv_font_montserrat_10, 0);
+    lv_obj_set_style_text_font(lbl_system_title, &lv_font_montserrat_14, 0);
     
     lbl_system_uptime = lv_label_create(grid_system);
     lv_label_set_text(lbl_system_uptime, "0s");
@@ -260,7 +260,7 @@ static void ui_four_grid_init(void) {
     lbl_system_state = lv_label_create(grid_system);
     lv_label_set_text(lbl_system_state, "Ready");
     lv_obj_align(lbl_system_state, LV_ALIGN_BOTTOM_MID, 0, -5);
-    lv_obj_set_style_text_font(lbl_system_state, &lv_font_montserrat_10, 0);
+    lv_obj_set_style_text_font(lbl_system_state, &lv_font_montserrat_14, 0);
     
     // Bottom-right: Memory (85x160)
     grid_memory = lv_obj_create(lv_screen_active());
@@ -271,17 +271,17 @@ static void ui_four_grid_init(void) {
     lv_obj_t *lbl_memory_title = lv_label_create(grid_memory);
     lv_label_set_text(lbl_memory_title, LV_SYMBOL_LIST " Memory");
     lv_obj_align(lbl_memory_title, LV_ALIGN_TOP_MID, 0, 5);
-    lv_obj_set_style_text_font(lbl_memory_title, &lv_font_montserrat_10, 0);
+    lv_obj_set_style_text_font(lbl_memory_title, &lv_font_montserrat_14, 0);
     
     lbl_memory_free = lv_label_create(grid_memory);
     lv_label_set_text(lbl_memory_free, "Free: 0KB");
     lv_obj_align(lbl_memory_free, LV_ALIGN_CENTER, 0, -10);
-    lv_obj_set_style_text_font(lbl_memory_free, &lv_font_montserrat_10, 0);
+    lv_obj_set_style_text_font(lbl_memory_free, &lv_font_montserrat_14, 0);
     
     lbl_memory_total = lv_label_create(grid_memory);
     lv_label_set_text(lbl_memory_total, "Total: 0KB");
     lv_obj_align(lbl_memory_total, LV_ALIGN_BOTTOM_MID, 0, -5);
-    lv_obj_set_style_text_font(lbl_memory_total, &lv_font_montserrat_10, 0);
+    lv_obj_set_style_text_font(lbl_memory_total, &lv_font_montserrat_14, 0);
     
     lvgl_port_unlock();
     
