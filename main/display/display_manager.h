@@ -2,69 +2,30 @@
 
 #include "esp_err.h"
 #include <stdbool.h>
-#include "lvgl.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
- * Display modes for T-Display-S3
- */
-typedef enum {
-    DISPLAY_MODE_GRID = 0,      // Four-grid dashboard (WiFi, Telegram, System, Memory)
-    DISPLAY_MODE_DETAIL,        // Detailed values (signal strength, uptime, etc.)
-    DISPLAY_MODE_LARGE_IP,      // Large IP address display
-    DISPLAY_MODE_COUNT          // Total number of modes
-} display_mode_t;
-
-/**
- * System status structure for display
- */
-typedef struct {
-    bool wifi_connected;
-    int8_t wifi_rssi;           // WiFi signal strength in dBm
-    char ip_address[16];        // IP address string
-    bool telegram_connected;
-    uint32_t uptime_seconds;    // System uptime
-    uint32_t free_heap;         // Free heap memory in bytes
-    uint32_t total_heap;        // Total heap memory in bytes
-    const char *system_state;   // System state string (e.g., "Ready", "Error")
-} display_status_t;
-
-/**
- * Initialize the display subsystem (T-Display-S3 ST7789 + LVGL).
- * @return ESP_OK on success
+ * Initialize the T-Display-S3 LCD hardware (ST7789, 8-bit i80 bus)
+ * and the LVGL graphics library. Starts a background task for UI refresh.
  */
 esp_err_t display_manager_init(void);
 
 /**
- * Update the display with current system status.
- * Must be called from LVGL task or with proper locking.
- * @param status  Pointer to display_status_t structure
+ * Update the system status shown on the display.
+ * @param wifi_connected  WiFi connection state
+ * @param tg_connected    Telegram bot connection state
+ * @param status_text     Short status description (max ~30 chars)
  */
-void display_manager_update(const display_status_t *status);
+void display_manager_update(bool wifi_connected, bool tg_connected, const char *status_text);
 
 /**
- * Set display mode (grid, detail, large IP).
- * @param mode  Display mode to set
+ * Convenience: update only the status text line.
  */
-void display_manager_set_mode(display_mode_t mode);
+void display_manager_set_status(const char *status_text);
 
-/**
- * Get current display mode.
- * @return Current display mode
- */
-display_mode_t display_manager_get_mode(void);
-
-/**
- * Toggle backlight on/off.
- */
-void display_manager_toggle_backlight(void);
-
-/**
- * Force refresh the display.
- */
-void display_manager_refresh(void);
-
-/**
- * Get LVGL display handle (for advanced usage).
- * @return LVGL display handle
- */
-lv_display_t* display_manager_get_lvgl_display(void);
+#ifdef __cplusplus
+}
+#endif
