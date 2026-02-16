@@ -39,17 +39,8 @@ static display_status_t last_status = {0};
 static bool backlight_on = true;
 static uint16_t *framebuffer = NULL;
 
-// Simple 8x16 font (ASCII 32-127)
-// Each character is 8 pixels wide, 16 pixels tall
-// Stored as 16 bytes per character (1 byte per row)
-static const uint8_t font_8x16[][16] = {
-    // Space (32)
-    {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-    // ! (33)
-    {0x00, 0x00, 0x18, 0x3C, 0x3C, 0x3C, 0x18, 0x18, 0x18, 0x00, 0x18, 0x18, 0x00, 0x00, 0x00, 0x00},
-    // Add more characters as needed...
-    // For brevity, we'll implement a minimal set
-};
+// Note: Font rendering is currently using a simple placeholder pattern
+// TODO: Implement proper bitmap font for better readability
 
 // Helper: Draw a filled rectangle
 static void draw_rect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color)
@@ -94,7 +85,7 @@ static void draw_text(uint16_t x, uint16_t y, const char *text, uint16_t color, 
     uint16_t cursor_y = y;
     
     while (*text) {
-        char c = *text++;
+        text++;  // Move to next character
         
         // Simple character rendering (just draw rectangles for now)
         // In a real implementation, use a proper font
