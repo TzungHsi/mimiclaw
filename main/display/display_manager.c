@@ -29,7 +29,7 @@ static const char *TAG = "display_manager";
 // ST7789 display resolution (native orientation before swap_xy)
 #define LCD_H_RES              320
 #define LCD_V_RES              170
-#define LCD_PIXEL_CLOCK_HZ     (17 * 1000 * 1000)  // 17MHz
+#define LCD_PIXEL_CLOCK_HZ     (10 * 1000 * 1000)  // 10MHz (working in original version)
 
 // LVGL buffer size (1/10 of display)
 #define LVGL_BUFFER_SIZE       ((LCD_H_RES * LCD_V_RES) / 10)
