@@ -187,7 +187,6 @@ static lv_disp_t *init_lvgl_display(esp_lcd_panel_io_handle_t io_handle,
         },
         .flags = {
             .buff_spiram = true,
-            .swap_bytes = true,
         },
     };
 
