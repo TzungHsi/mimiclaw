@@ -105,15 +105,15 @@ void display_ui_init(lv_disp_t *disp)
         lv_obj_clear_flag(body, LV_OBJ_FLAG_SCROLLABLE);
 
         /* Status dot (● indicator) */
-        lbl_status_dot = create_label(body, "●", COLOR_YELLOW, &lv_font_montserrat_18);
+        lbl_status_dot = create_label(body, "●", COLOR_YELLOW, &lv_font_montserrat_14);
         lv_obj_align(lbl_status_dot, LV_ALIGN_CENTER, -80, -8);
 
         /* Status text */
-        lbl_status = create_label(body, "Booting...", COLOR_WHITE, &lv_font_montserrat_18);
+        lbl_status = create_label(body, "Booting...", COLOR_WHITE, &lv_font_montserrat_14);
         lv_obj_align(lbl_status, LV_ALIGN_CENTER, 20, -8);
 
         /* Sub-label: "AI Agent" */
-        lv_obj_t *lbl_sub = create_label(body, "ESP32-S3 AI Agent", COLOR_GRAY, &lv_font_montserrat_12);
+        lv_obj_t *lbl_sub = create_label(body, "ESP32-S3 AI Agent", COLOR_GRAY, &lv_font_montserrat_14);
         lv_obj_align(lbl_sub, LV_ALIGN_CENTER, 0, 24);
 
         /* ══════════════════════════════════════
@@ -130,11 +130,11 @@ void display_ui_init(lv_disp_t *disp)
         lv_obj_clear_flag(footer, LV_OBJ_FLAG_SCROLLABLE);
 
         /* WiFi detail */
-        lbl_wifi_detail = create_label(footer, "WiFi: ---", COLOR_GRAY, &lv_font_montserrat_12);
+        lbl_wifi_detail = create_label(footer, "WiFi: ---", COLOR_GRAY, &lv_font_montserrat_14);
         lv_obj_align(lbl_wifi_detail, LV_ALIGN_LEFT_MID, 8, 0);
 
         /* Telegram detail */
-        lbl_tg_detail = create_label(footer, "TG: ---", COLOR_GRAY, &lv_font_montserrat_12);
+        lbl_tg_detail = create_label(footer, "TG: ---", COLOR_GRAY, &lv_font_montserrat_14);
         lv_obj_align(lbl_tg_detail, LV_ALIGN_RIGHT_MID, -8, 0);
 
         lvgl_port_unlock();
