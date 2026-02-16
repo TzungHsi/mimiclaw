@@ -164,7 +164,7 @@ static esp_err_t init_lvgl_port(void) {
     // Initialize LVGL port
     const lvgl_port_cfg_t lvgl_cfg = {
         .task_priority = 4,
-        .task_stack = 4096,
+        .task_stack = 8192,  // Increased from 4096 to prevent stack overflow
         .task_affinity = 1,  // Core 1 (Core 0 for WiFi/Telegram)
         .task_max_sleep_ms = 500,
         .timer_period_ms = 5
