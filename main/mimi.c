@@ -104,10 +104,6 @@ void app_main(void)
     /* Initialize Display Module */
     display_manager_init();
     
-    /* Immediately reduce backlight to 30% to lower power consumption during boot */
-    ESP_LOGI(TAG, "Reducing backlight to 30%% for power saving during boot...");
-    display_manager_set_backlight(30);
-    
     display_manager_set_status("System Booting...");
 
     /* Phase 1: Core infrastructure */
@@ -133,14 +129,12 @@ void app_main(void)
     ESP_ERROR_CHECK(serial_cli_init());
     display_manager_set_status("Waiting for WiFi...");
 
-    /* Start WiFi (backlight already at 30% to reduce peak current) */
+    /* Start WiFi */
     esp_err_t wifi_err = wifi_manager_start();
     if (wifi_err == ESP_OK) {
         if (wifi_manager_wait_connected(30000) == ESP_OK) {
             ESP_LOGI(TAG, "WiFi connected: %s", wifi_manager_get_ip());
             
-            /* Restore backlight to 100% after WiFi connected */
-            display_manager_set_backlight(100);
             display_manager_update(true, false, "WiFi Connected");
 
             /* Start network-dependent services */
