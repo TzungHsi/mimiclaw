@@ -23,6 +23,7 @@
 #include "proxy/http_proxy.h"
 #include "tools/tool_registry.h"
 #include "display/display_manager.h"
+#include "display/telegram_status.h"
 #include "button_driver.h"
 
 static const char *TAG = "mimi";
@@ -120,6 +121,9 @@ void app_main(void)
     ESP_ERROR_CHECK(tool_registry_init());
     ESP_ERROR_CHECK(agent_loop_init());
 
+    /* Initialize Telegram status */
+    telegram_status_set(TG_STATUS_OFFLINE);
+
     /* Start Serial CLI first (works without WiFi) */
     ESP_ERROR_CHECK(serial_cli_init());
     display_manager_set_status("Waiting for WiFi...");
@@ -133,6 +137,7 @@ void app_main(void)
 
             /* Start network-dependent services */
             ESP_ERROR_CHECK(telegram_bot_start());
+            telegram_status_set(TG_STATUS_READY);
             ESP_ERROR_CHECK(agent_loop_start());
             ESP_ERROR_CHECK(ws_server_start());
             display_manager_update(true, true, "System Ready");
@@ -226,7 +231,8 @@ static void status_update_task(void *arg)
         }
         
         /* Telegram status */
-        status.telegram_connected = status.wifi_connected;  // Simplified
+        telegram_status_t tg_status = telegram_status_get();
+        status.telegram_connected = (tg_status != TG_STATUS_OFFLINE);
         
         /* System status */
         int64_t now_us = esp_timer_get_time();

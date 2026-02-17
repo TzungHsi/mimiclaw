@@ -1,10 +1,11 @@
 #include "agent_loop.h"
-#include "agent/context_builder.h"
+#include "context_builder.h"
 #include "mimi_config.h"
 #include "bus/message_bus.h"
 #include "llm/llm_proxy.h"
 #include "memory/session_mgr.h"
 #include "tools/tool_registry.h"
+#include "display/telegram_status.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -100,6 +101,9 @@ static void agent_loop_task(void *arg)
         if (err != ESP_OK) continue;
 
         ESP_LOGI(TAG, "Processing message from %s:%s", msg.channel, msg.chat_id);
+
+        /* Update status: responding */
+        telegram_status_set(TG_STATUS_RESPONDING);
 
         /* 1. Build system prompt */
         context_build_system_prompt(system_prompt, MIMI_CONTEXT_BUF_SIZE);

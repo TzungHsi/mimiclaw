@@ -19,6 +19,7 @@ idf_component_register(
         "tools/tool_files.c"
         "display/display_manager.c"
         "display/display_ui.c"
+        "display/telegram_status.c"
         "button_driver.c"
     INCLUDE_DIRS
         "."

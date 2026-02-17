@@ -2,6 +2,7 @@
 #include "mimi_config.h"
 #include "bus/message_bus.h"
 #include "proxy/http_proxy.h"
+#include "display/telegram_status.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -213,6 +214,9 @@ static void process_updates(const char *json_str)
 
         ESP_LOGI(TAG, "Message from chat %s: %.40s...", chat_id_str, text->valuestring);
 
+        /* Update status: incoming message */
+        telegram_status_set(TG_STATUS_INCOMING);
+
         /* Push to inbound bus */
         mimi_msg_t msg = {0};
         strncpy(msg.channel, MIMI_CHAN_TELEGRAM, sizeof(msg.channel) - 1);
@@ -220,6 +224,7 @@ static void process_updates(const char *json_str)
         msg.content = strdup(text->valuestring);
         if (msg.content) {
             message_bus_push_inbound(&msg);
+            /* Status will be set to RESPONDING by agent_loop */
         }
     }
 
@@ -290,8 +295,12 @@ esp_err_t telegram_bot_start(void)
 
 esp_err_t telegram_send_message(const char *chat_id, const char *text)
 {
+    /* Update status: sending message */
+    telegram_status_set(TG_STATUS_SENDING);
+    
     if (s_bot_token[0] == '\0') {
         ESP_LOGW(TAG, "Cannot send: no bot token");
+        telegram_status_set(TG_STATUS_READY);
         return ESP_ERR_INVALID_STATE;
     }
 
@@ -368,6 +377,8 @@ esp_err_t telegram_send_message(const char *chat_id, const char *text)
         offset += chunk;
     }
 
+    /* Update status: back to ready */
+    telegram_status_set(TG_STATUS_READY);
     return ESP_OK;
 }
 

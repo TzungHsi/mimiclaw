@@ -17,6 +17,7 @@
  */
 
 #include "display_ui.h"
+#include "telegram_status.h"
 #include "esp_lvgl_port.h"
 #include "esp_log.h"
 #include <stdio.h>
@@ -203,8 +204,8 @@ void display_ui_update_dashboard(const ui_status_t *status)
                 status->telegram_connected ? COLOR_GREEN : COLOR_RED, 0);
         }
         if (ui_elements.tg_detail) {
-            lv_label_set_text(ui_elements.tg_detail, 
-                status->telegram_connected ? "Ready" : "Waiting...");
+            const char *tg_text = telegram_status_get_text();
+            lv_label_set_text(ui_elements.tg_detail, tg_text);
         }
         
         /* ── System Card ── */
