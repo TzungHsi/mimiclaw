@@ -326,6 +326,11 @@ static int cmd_restart(int argc, char **argv)
 
 esp_err_t serial_cli_init(void)
 {
+#ifdef CONFIG_ESP_CONSOLE_NONE
+    // Console is disabled, skip CLI initialization
+    ESP_LOGI(TAG, "Console disabled, serial CLI not available");
+    return ESP_OK;
+#else
     esp_console_repl_t *repl = NULL;
     esp_console_repl_config_t repl_config = ESP_CONSOLE_REPL_CONFIG_DEFAULT();
     repl_config.prompt = "mimi> ";
@@ -518,4 +523,5 @@ esp_err_t serial_cli_init(void)
     ESP_LOGI(TAG, "Serial CLI started");
 
     return ESP_OK;
+#endif
 }
