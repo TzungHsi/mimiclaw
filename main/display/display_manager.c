@@ -17,6 +17,7 @@
 #include "esp_heap_caps.h"
 
 #include "driver/gpio.h"
+#include "driver/ledc.h"
 #include "esp_lcd_panel_io.h"
 #include "esp_lcd_panel_vendor.h"
 #include "esp_lcd_panel_ops.h"
@@ -58,10 +59,18 @@ static const char *TAG = "display_mgr";
 #define LVGL_TASK_STACK_SIZE   (8 * 1024)
 #define LVGL_TASK_PRIORITY       2
 
+/* ── Backlight PWM Configuration ── */
+#define BACKLIGHT_LEDC_TIMER      LEDC_TIMER_0
+#define BACKLIGHT_LEDC_MODE       LEDC_LOW_SPEED_MODE
+#define BACKLIGHT_LEDC_CHANNEL    LEDC_CHANNEL_0
+#define BACKLIGHT_LEDC_DUTY_RES   LEDC_TIMER_8_BIT  // 0-255
+#define BACKLIGHT_LEDC_FREQUENCY  5000  // 5 kHz
+
 /* ── Internal State ── */
 static lv_disp_t *s_disp = NULL;
 static display_mode_t s_display_mode = DISPLAY_MODE_DASHBOARD;
 static bool s_backlight_on = true;
+static uint8_t s_backlight_brightness = 100;  // 0-100%
 static display_status_t s_status = {0};
 
 static struct {
@@ -82,16 +91,34 @@ static void lcd_power_init(void)
     gpio_set_level(LCD_PIN_NUM_PWR, 1);
 }
 
-/* ── LCD Backlight Init (simple on/off, no PWM) ── */
+/* ── LCD Backlight Init (PWM controlled) ── */
 static void lcd_backlight_init(void)
 {
-    ESP_LOGI(TAG, "Turning on backlight (GPIO %d)...", LCD_PIN_NUM_BK_LIGHT);
-    gpio_config_t bk_cfg = {
-        .pin_bit_mask = 1ULL << LCD_PIN_NUM_BK_LIGHT,
-        .mode = GPIO_MODE_OUTPUT,
+    ESP_LOGI(TAG, "Initializing PWM backlight (GPIO %d)...", LCD_PIN_NUM_BK_LIGHT);
+    
+    // Configure LEDC timer
+    ledc_timer_config_t ledc_timer = {
+        .speed_mode       = BACKLIGHT_LEDC_MODE,
+        .duty_resolution  = BACKLIGHT_LEDC_DUTY_RES,
+        .timer_num        = BACKLIGHT_LEDC_TIMER,
+        .freq_hz          = BACKLIGHT_LEDC_FREQUENCY,
+        .clk_cfg          = LEDC_AUTO_CLK
     };
-    gpio_config(&bk_cfg);
-    gpio_set_level(LCD_PIN_NUM_BK_LIGHT, 1);
+    ESP_ERROR_CHECK(ledc_timer_config(&ledc_timer));
+    
+    // Configure LEDC channel
+    ledc_channel_config_t ledc_channel = {
+        .gpio_num       = LCD_PIN_NUM_BK_LIGHT,
+        .speed_mode     = BACKLIGHT_LEDC_MODE,
+        .channel        = BACKLIGHT_LEDC_CHANNEL,
+        .intr_type      = LEDC_INTR_DISABLE,
+        .timer_sel      = BACKLIGHT_LEDC_TIMER,
+        .duty           = 255,  // Start at full brightness
+        .hpoint         = 0
+    };
+    ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel));
+    
+    ESP_LOGI(TAG, "Backlight PWM initialized at 100%%");
 }
 
 /* ── LCD RD Pin Init (pull high, not used for write) ── */
@@ -309,8 +336,30 @@ void display_manager_set_mode(display_mode_t mode)
 void display_manager_toggle_backlight(void)
 {
     s_backlight_on = !s_backlight_on;
-    gpio_set_level(LCD_PIN_NUM_BK_LIGHT, s_backlight_on ? 1 : 0);
+    if (s_backlight_on) {
+        // Restore previous brightness
+        uint32_t duty = (s_backlight_brightness * 255) / 100;
+        ledc_set_duty(BACKLIGHT_LEDC_MODE, BACKLIGHT_LEDC_CHANNEL, duty);
+        ledc_update_duty(BACKLIGHT_LEDC_MODE, BACKLIGHT_LEDC_CHANNEL);
+    } else {
+        // Turn off
+        ledc_set_duty(BACKLIGHT_LEDC_MODE, BACKLIGHT_LEDC_CHANNEL, 0);
+        ledc_update_duty(BACKLIGHT_LEDC_MODE, BACKLIGHT_LEDC_CHANNEL);
+    }
     ESP_LOGI(TAG, "Backlight %s", s_backlight_on ? "ON" : "OFF");
+}
+
+void display_manager_set_backlight(uint8_t brightness_percent)
+{
+    if (brightness_percent > 100) brightness_percent = 100;
+    s_backlight_brightness = brightness_percent;
+    s_backlight_on = (brightness_percent > 0);
+    
+    uint32_t duty = (brightness_percent * 255) / 100;
+    ledc_set_duty(BACKLIGHT_LEDC_MODE, BACKLIGHT_LEDC_CHANNEL, duty);
+    ledc_update_duty(BACKLIGHT_LEDC_MODE, BACKLIGHT_LEDC_CHANNEL);
+    
+    ESP_LOGI(TAG, "Backlight set to %d%%", brightness_percent);
 }
 
 void display_manager_refresh(void)

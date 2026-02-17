@@ -68,6 +68,11 @@ void display_manager_set_mode(display_mode_t mode);
 void display_manager_toggle_backlight(void);
 
 /**
+ * Set backlight brightness (0-100%)
+ */
+void display_manager_set_backlight(uint8_t brightness_percent);
+
+/**
  * Force refresh display
  */
 void display_manager_refresh(void);
