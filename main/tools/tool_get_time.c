@@ -126,16 +126,21 @@ static esp_err_t fetch_time_direct(char *out, size_t out_size)
     }
 
     /* Get Date header */
-    char date_val[64] = {0};
-    err = esp_http_client_get_header(client, "Date", (char **)&date_val);
-    /* esp_http_client_get_header returns pointer, not copy */
     char *date_ptr = NULL;
-    esp_http_client_get_header(client, "Date", &date_ptr);
+    err = esp_http_client_get_header(client, "Date", &date_ptr);
+    
+    if (err != ESP_OK || !date_ptr || date_ptr[0] == '\0') {
+        esp_http_client_cleanup(client);
+        return ESP_ERR_NOT_FOUND;
+    }
+    
+    /* Copy the date string before cleanup */
+    char date_val[64];
+    strncpy(date_val, date_ptr, sizeof(date_val) - 1);
+    date_val[sizeof(date_val) - 1] = '\0';
     esp_http_client_cleanup(client);
 
-    if (!date_ptr || date_ptr[0] == '\0') return ESP_ERR_NOT_FOUND;
-
-    if (!parse_and_set_time(date_ptr, out, out_size)) return ESP_FAIL;
+    if (!parse_and_set_time(date_val, out, out_size)) return ESP_FAIL;
     return ESP_OK;
 }
 
