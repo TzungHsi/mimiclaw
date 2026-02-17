@@ -25,16 +25,16 @@
 
 static const char *TAG = "display_ui";
 
-/* ── Color Palette (NerdMiner-inspired dark theme) ── */
-#define COLOR_BG_DARK      lv_color_hex(0x1A1A2E)
-#define COLOR_BG_CARD      lv_color_hex(0x16213E)
-#define COLOR_ACCENT       lv_color_hex(0xE94560)
-#define COLOR_GREEN        lv_color_hex(0x00FF88)
-#define COLOR_RED          lv_color_hex(0xFF4444)
-#define COLOR_YELLOW       lv_color_hex(0xFFD700)
-#define COLOR_BLUE         lv_color_hex(0x4A9EFF)
-#define COLOR_WHITE        lv_color_hex(0xEEEEEE)
-#define COLOR_GRAY         lv_color_hex(0x888888)
+/* ── Color Palette (High contrast black & white) ── */
+#define COLOR_BG_DARK      lv_color_hex(0x000000)  // Pure black
+#define COLOR_BG_CARD      lv_color_hex(0x000000)  // Pure black
+#define COLOR_ACCENT       lv_color_hex(0xFFFFFF)  // White
+#define COLOR_GREEN        lv_color_hex(0xFFFFFF)  // White
+#define COLOR_RED          lv_color_hex(0xFFFFFF)  // White
+#define COLOR_YELLOW       lv_color_hex(0xFFFFFF)  // White
+#define COLOR_BLUE         lv_color_hex(0xFFFFFF)  // White
+#define COLOR_WHITE        lv_color_hex(0xFFFFFF)  // Pure white
+#define COLOR_GRAY         lv_color_hex(0xFFFFFF)  // White
 
 /* ── UI Element Handles ── */
 static struct {
@@ -63,8 +63,8 @@ static lv_obj_t *create_card(lv_obj_t *parent, int16_t x, int16_t y, int16_t w, 
     lv_obj_set_pos(card, x, y);
     lv_obj_set_style_bg_color(card, COLOR_BG_CARD, 0);
     lv_obj_set_style_bg_opa(card, LV_OPA_COVER, 0);
-    lv_obj_set_style_border_width(card, 1, 0);
-    lv_obj_set_style_border_color(card, COLOR_GRAY, 0);
+    lv_obj_set_style_border_width(card, 2, 0);
+    lv_obj_set_style_border_color(card, COLOR_WHITE, 0);
     lv_obj_set_style_radius(card, 4, 0);
     lv_obj_set_style_pad_all(card, 6, 0);
     lv_obj_clear_flag(card, LV_OBJ_FLAG_SCROLLABLE);
@@ -100,46 +100,46 @@ void display_ui_init(lv_disp_t *disp)
         
         /* WiFi Card (top-left) */
         lv_obj_t *wifi_card = create_card(scr, 0, 0, 160, 85);
-        ui_elements.wifi_title = create_label(wifi_card, LV_SYMBOL_WIFI " WiFi", COLOR_BLUE, &lv_font_montserrat_16);
+        ui_elements.wifi_title = create_label(wifi_card, LV_SYMBOL_WIFI " WiFi", COLOR_WHITE, &lv_font_montserrat_18);
         lv_obj_align(ui_elements.wifi_title, LV_ALIGN_TOP_LEFT, 0, 0);
         
-        ui_elements.wifi_status = create_label(wifi_card, "Disconnected", COLOR_RED, &lv_font_montserrat_14);
-        lv_obj_align(ui_elements.wifi_status, LV_ALIGN_TOP_LEFT, 0, 22);
+        ui_elements.wifi_status = create_label(wifi_card, "Disconnected", COLOR_WHITE, &lv_font_montserrat_18);
+        lv_obj_align(ui_elements.wifi_status, LV_ALIGN_TOP_LEFT, 0, 24);
         
-        ui_elements.wifi_detail = create_label(wifi_card, "0.0.0.0", COLOR_GRAY, &lv_font_montserrat_12);
+        ui_elements.wifi_detail = create_label(wifi_card, "0.0.0.0", COLOR_WHITE, &lv_font_montserrat_18);
         lv_obj_align(ui_elements.wifi_detail, LV_ALIGN_TOP_LEFT, 0, 44);
         
         /* Telegram Card (top-right) */
         lv_obj_t *tg_card = create_card(scr, 160, 0, 160, 85);
-        ui_elements.tg_title = create_label(tg_card, LV_SYMBOL_ENVELOPE " Telegram", COLOR_BLUE, &lv_font_montserrat_16);
+        ui_elements.tg_title = create_label(tg_card, LV_SYMBOL_ENVELOPE " Telegram", COLOR_WHITE, &lv_font_montserrat_18);
         lv_obj_align(ui_elements.tg_title, LV_ALIGN_TOP_LEFT, 0, 0);
         
-        ui_elements.tg_status = create_label(tg_card, "Offline", COLOR_RED, &lv_font_montserrat_14);
-        lv_obj_align(ui_elements.tg_status, LV_ALIGN_TOP_LEFT, 0, 22);
+        ui_elements.tg_status = create_label(tg_card, "Offline", COLOR_WHITE, &lv_font_montserrat_18);
+        lv_obj_align(ui_elements.tg_status, LV_ALIGN_TOP_LEFT, 0, 24);
         
-        ui_elements.tg_detail = create_label(tg_card, "Waiting...", COLOR_GRAY, &lv_font_montserrat_12);
+        ui_elements.tg_detail = create_label(tg_card, "Waiting...", COLOR_WHITE, &lv_font_montserrat_18);
         lv_obj_align(ui_elements.tg_detail, LV_ALIGN_TOP_LEFT, 0, 44);
         
         /* System Card (bottom-left) */
         lv_obj_t *sys_card = create_card(scr, 0, 85, 160, 85);
-        ui_elements.sys_title = create_label(sys_card, LV_SYMBOL_SETTINGS " System", COLOR_BLUE, &lv_font_montserrat_16);
+        ui_elements.sys_title = create_label(sys_card, LV_SYMBOL_SETTINGS " System", COLOR_WHITE, &lv_font_montserrat_18);
         lv_obj_align(ui_elements.sys_title, LV_ALIGN_TOP_LEFT, 0, 0);
         
-        ui_elements.sys_status = create_label(sys_card, "Starting", COLOR_YELLOW, &lv_font_montserrat_14);
-        lv_obj_align(ui_elements.sys_status, LV_ALIGN_TOP_LEFT, 0, 22);
+        ui_elements.sys_status = create_label(sys_card, "Starting", COLOR_WHITE, &lv_font_montserrat_18);
+        lv_obj_align(ui_elements.sys_status, LV_ALIGN_TOP_LEFT, 0, 24);
         
-        ui_elements.sys_detail = create_label(sys_card, "Uptime: 0s", COLOR_GRAY, &lv_font_montserrat_12);
+        ui_elements.sys_detail = create_label(sys_card, "Uptime: 0s", COLOR_WHITE, &lv_font_montserrat_18);
         lv_obj_align(ui_elements.sys_detail, LV_ALIGN_TOP_LEFT, 0, 44);
         
         /* Memory Card (bottom-right) */
         lv_obj_t *mem_card = create_card(scr, 160, 85, 160, 85);
-        ui_elements.mem_title = create_label(mem_card, LV_SYMBOL_SD_CARD " Memory", COLOR_BLUE, &lv_font_montserrat_16);
+        ui_elements.mem_title = create_label(mem_card, LV_SYMBOL_SD_CARD " Memory", COLOR_WHITE, &lv_font_montserrat_18);
         lv_obj_align(ui_elements.mem_title, LV_ALIGN_TOP_LEFT, 0, 0);
         
-        ui_elements.mem_status = create_label(mem_card, "0 KB Free", COLOR_GRAY, &lv_font_montserrat_14);
-        lv_obj_align(ui_elements.mem_status, LV_ALIGN_TOP_LEFT, 0, 22);
+        ui_elements.mem_status = create_label(mem_card, "0 KB Free", COLOR_WHITE, &lv_font_montserrat_18);
+        lv_obj_align(ui_elements.mem_status, LV_ALIGN_TOP_LEFT, 0, 24);
         
-        ui_elements.mem_detail = create_label(mem_card, "0% Used", COLOR_GRAY, &lv_font_montserrat_12);
+        ui_elements.mem_detail = create_label(mem_card, "0% Used", COLOR_WHITE, &lv_font_montserrat_18);
         lv_obj_align(ui_elements.mem_detail, LV_ALIGN_TOP_LEFT, 0, 44);
 
         lvgl_port_unlock();
