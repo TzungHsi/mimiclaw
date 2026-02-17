@@ -17,6 +17,7 @@ idf_component_register(
         "tools/tool_web_search.c"
         "tools/tool_get_time.c"
         "tools/tool_files.c"
+        "tools/tool_cron.c"
         "display/display_manager.c"
         "display/display_ui.c"
         "display/telegram_status.c"

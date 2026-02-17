@@ -2,6 +2,7 @@
 #include "tools/tool_web_search.h"
 #include "tools/tool_get_time.h"
 #include "tools/tool_files.h"
+#include "tools/tool_cron.h"
 
 #include <string.h>
 #include "esp_log.h"
@@ -9,7 +10,7 @@
 
 static const char *TAG = "tools";
 
-#define MAX_TOOLS 8
+#define MAX_TOOLS 12
 
 static mimi_tool_t s_tools[MAX_TOOLS];
 static int s_tool_count = 0;
@@ -129,6 +130,48 @@ esp_err_t tool_registry_init(void)
         .execute = tool_list_dir_execute,
     };
     register_tool(&ld);
+
+    /* Register cron_add */
+    mimi_tool_t ca = {
+        .name = "cron_add",
+        .description = "Add a scheduled task. Use 'every' for recurring tasks (interval_s) or 'at' for one-time tasks (at_epoch unix timestamp).",
+        .input_schema_json =
+            "{\"type\":\"object\","
+            "\"properties\":{\"name\":{\"type\":\"string\",\"description\":\"Job name\"},"
+            "\"schedule_type\":{\"type\":\"string\",\"description\":\"'every' or 'at'\"},"
+            "\"interval_s\":{\"type\":\"number\",\"description\":\"Seconds between runs (for 'every')\"},"
+            "\"at_epoch\":{\"type\":\"number\",\"description\":\"Unix timestamp (for 'at')\"},"
+            "\"message\":{\"type\":\"string\",\"description\":\"Message/prompt to execute when triggered\"},"
+            "\"channel\":{\"type\":\"string\",\"description\":\"Optional: telegram/ws\"},"
+            "\"chat_id\":{\"type\":\"string\",\"description\":\"Optional: chat ID\"}},"
+            "\"required\":[\"name\",\"schedule_type\",\"message\"]}",
+        .execute = tool_cron_add_execute,
+    };
+    register_tool(&ca);
+
+    /* Register cron_list */
+    mimi_tool_t cl = {
+        .name = "cron_list",
+        .description = "List all scheduled cron jobs.",
+        .input_schema_json =
+            "{\"type\":\"object\","
+            "\"properties\":{},"
+            "\"required\":[]}",
+        .execute = tool_cron_list_execute,
+    };
+    register_tool(&cl);
+
+    /* Register cron_remove */
+    mimi_tool_t cr = {
+        .name = "cron_remove",
+        .description = "Remove a scheduled cron job by its ID.",
+        .input_schema_json =
+            "{\"type\":\"object\","
+            "\"properties\":{\"job_id\":{\"type\":\"string\",\"description\":\"Job ID to remove\"}},"
+            "\"required\":[\"job_id\"]}",
+        .execute = tool_cron_remove_execute,
+    };
+    register_tool(&cr);
 
     build_tools_json();
 
