@@ -109,6 +109,8 @@ static esp_err_t fetch_time_via_proxy(char *out, size_t out_size)
 /* Fetch time via direct HTTPS */
 static esp_err_t fetch_time_direct(char *out, size_t out_size)
 {
+    ESP_LOGI(TAG, "Attempting direct HTTPS connection to api.telegram.org");
+    
     esp_http_client_config_t config = {
         .url = "https://api.telegram.org/",
         .method = HTTP_METHOD_HEAD,
@@ -117,22 +119,39 @@ static esp_err_t fetch_time_direct(char *out, size_t out_size)
     };
 
     esp_http_client_handle_t client = esp_http_client_init(&config);
-    if (!client) return ESP_FAIL;
+    if (!client) {
+        ESP_LOGE(TAG, "Failed to init HTTP client");
+        return ESP_FAIL;
+    }
 
+    ESP_LOGI(TAG, "Performing HTTP request...");
     esp_err_t err = esp_http_client_perform(client);
     if (err != ESP_OK) {
+        ESP_LOGE(TAG, "HTTP perform failed: %s", esp_err_to_name(err));
         esp_http_client_cleanup(client);
         return err;
     }
+
+    int status_code = esp_http_client_get_status_code(client);
+    ESP_LOGI(TAG, "HTTP response status: %d", status_code);
 
     /* Get Date header */
     char *date_ptr = NULL;
     err = esp_http_client_get_header(client, "Date", &date_ptr);
     
-    if (err != ESP_OK || !date_ptr || date_ptr[0] == '\0') {
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to get Date header: %s", esp_err_to_name(err));
         esp_http_client_cleanup(client);
         return ESP_ERR_NOT_FOUND;
     }
+    
+    if (!date_ptr || date_ptr[0] == '\0') {
+        ESP_LOGE(TAG, "Date header is empty");
+        esp_http_client_cleanup(client);
+        return ESP_ERR_NOT_FOUND;
+    }
+    
+    ESP_LOGI(TAG, "Got Date header: %s", date_ptr);
     
     /* Copy the date string before cleanup */
     char date_val[64];
@@ -140,7 +159,13 @@ static esp_err_t fetch_time_direct(char *out, size_t out_size)
     date_val[sizeof(date_val) - 1] = '\0';
     esp_http_client_cleanup(client);
 
-    if (!parse_and_set_time(date_val, out, out_size)) return ESP_FAIL;
+    ESP_LOGI(TAG, "Parsing date: %s", date_val);
+    if (!parse_and_set_time(date_val, out, out_size)) {
+        ESP_LOGE(TAG, "Failed to parse date string");
+        return ESP_FAIL;
+    }
+    
+    ESP_LOGI(TAG, "Successfully set system time");
     return ESP_OK;
 }
 
