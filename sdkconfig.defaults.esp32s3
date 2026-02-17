@@ -35,8 +35,8 @@ CONFIG_HTTPD_WS_SUPPORT=y
 CONFIG_PARTITION_TABLE_CUSTOM=y
 CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
 
-# Console: Use UART instead of USB Serial JTAG to avoid blocking when no host connected
-CONFIG_ESP_CONSOLE_UART_DEFAULT=y
+# Console: Disable console to avoid GPIO conflicts and blocking issues
+CONFIG_ESP_CONSOLE_NONE=y
 
 # LVGL Font Configuration
 CONFIG_LV_FONT_MONTSERRAT_10=y
