@@ -22,6 +22,7 @@
 #include "cli/serial_cli.h"
 #include "proxy/http_proxy.h"
 #include "tools/tool_registry.h"
+#include "tools/tool_get_time.h"
 #include "display/display_manager.h"
 #include "display/telegram_status.h"
 #include "button_driver.h"
@@ -142,6 +143,15 @@ void app_main(void)
             ESP_LOGI(TAG, "WiFi connected: %s", wifi_manager_get_ip());
             
             display_manager_update(true, false, "WiFi Connected");
+
+            /* Sync time via SNTP */
+            display_manager_set_status("Syncing time...");
+            char time_str[64];
+            if (tool_get_time_execute(NULL, time_str, sizeof(time_str)) == ESP_OK) {
+                ESP_LOGI(TAG, "System time synced: %s", time_str);
+            } else {
+                ESP_LOGW(TAG, "Failed to sync time, will retry later");
+            }
 
             /* Start network-dependent services */
             ESP_ERROR_CHECK(telegram_bot_start());
