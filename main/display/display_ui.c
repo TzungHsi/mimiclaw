@@ -72,12 +72,14 @@ static lv_obj_t *create_card(lv_obj_t *parent, int16_t x, int16_t y, int16_t w, 
 }
 
 /* ── Helper: create a styled label ── */
-static lv_obj_t *create_label(lv_obj_t *parent, const char *text, lv_color_t color)
+static lv_obj_t *create_label(lv_obj_t *parent, const char *text, lv_color_t color, const lv_font_t *font)
 {
     lv_obj_t *lbl = lv_label_create(parent);
     lv_label_set_text(lbl, text);
     lv_obj_set_style_text_color(lbl, color, 0);
-    lv_obj_set_style_text_font(lbl, &lv_font_montserrat_14, 0);
+    if (font) {
+        lv_obj_set_style_text_font(lbl, font, 0);
+    }
     return lbl;
 }
 
@@ -98,47 +100,47 @@ void display_ui_init(lv_disp_t *disp)
         
         /* WiFi Card (top-left) */
         lv_obj_t *wifi_card = create_card(scr, 0, 0, 160, 85);
-        ui_elements.wifi_title = create_label(wifi_card, LV_SYMBOL_WIFI " WiFi", COLOR_BLUE);
+        ui_elements.wifi_title = create_label(wifi_card, LV_SYMBOL_WIFI " WiFi", COLOR_BLUE, &lv_font_montserrat_16);
         lv_obj_align(ui_elements.wifi_title, LV_ALIGN_TOP_LEFT, 0, 0);
         
-        ui_elements.wifi_status = create_label(wifi_card, "Disconnected", COLOR_RED);
-        lv_obj_align(ui_elements.wifi_status, LV_ALIGN_TOP_LEFT, 0, 20);
+        ui_elements.wifi_status = create_label(wifi_card, "Disconnected", COLOR_RED, &lv_font_montserrat_14);
+        lv_obj_align(ui_elements.wifi_status, LV_ALIGN_TOP_LEFT, 0, 22);
         
-        ui_elements.wifi_detail = create_label(wifi_card, "0.0.0.0", COLOR_GRAY);
-        lv_obj_align(ui_elements.wifi_detail, LV_ALIGN_TOP_LEFT, 0, 40);
+        ui_elements.wifi_detail = create_label(wifi_card, "0.0.0.0", COLOR_GRAY, &lv_font_montserrat_12);
+        lv_obj_align(ui_elements.wifi_detail, LV_ALIGN_TOP_LEFT, 0, 44);
         
         /* Telegram Card (top-right) */
         lv_obj_t *tg_card = create_card(scr, 160, 0, 160, 85);
-        ui_elements.tg_title = create_label(tg_card, LV_SYMBOL_ENVELOPE " Telegram", COLOR_BLUE);
+        ui_elements.tg_title = create_label(tg_card, LV_SYMBOL_ENVELOPE " Telegram", COLOR_BLUE, &lv_font_montserrat_16);
         lv_obj_align(ui_elements.tg_title, LV_ALIGN_TOP_LEFT, 0, 0);
         
-        ui_elements.tg_status = create_label(tg_card, "Offline", COLOR_RED);
-        lv_obj_align(ui_elements.tg_status, LV_ALIGN_TOP_LEFT, 0, 20);
+        ui_elements.tg_status = create_label(tg_card, "Offline", COLOR_RED, &lv_font_montserrat_14);
+        lv_obj_align(ui_elements.tg_status, LV_ALIGN_TOP_LEFT, 0, 22);
         
-        ui_elements.tg_detail = create_label(tg_card, "Waiting...", COLOR_GRAY);
-        lv_obj_align(ui_elements.tg_detail, LV_ALIGN_TOP_LEFT, 0, 40);
+        ui_elements.tg_detail = create_label(tg_card, "Waiting...", COLOR_GRAY, &lv_font_montserrat_12);
+        lv_obj_align(ui_elements.tg_detail, LV_ALIGN_TOP_LEFT, 0, 44);
         
         /* System Card (bottom-left) */
         lv_obj_t *sys_card = create_card(scr, 0, 85, 160, 85);
-        ui_elements.sys_title = create_label(sys_card, LV_SYMBOL_SETTINGS " System", COLOR_BLUE);
+        ui_elements.sys_title = create_label(sys_card, LV_SYMBOL_SETTINGS " System", COLOR_BLUE, &lv_font_montserrat_16);
         lv_obj_align(ui_elements.sys_title, LV_ALIGN_TOP_LEFT, 0, 0);
         
-        ui_elements.sys_status = create_label(sys_card, "Starting", COLOR_YELLOW);
-        lv_obj_align(ui_elements.sys_status, LV_ALIGN_TOP_LEFT, 0, 20);
+        ui_elements.sys_status = create_label(sys_card, "Starting", COLOR_YELLOW, &lv_font_montserrat_14);
+        lv_obj_align(ui_elements.sys_status, LV_ALIGN_TOP_LEFT, 0, 22);
         
-        ui_elements.sys_detail = create_label(sys_card, "Uptime: 0s", COLOR_GRAY);
-        lv_obj_align(ui_elements.sys_detail, LV_ALIGN_TOP_LEFT, 0, 40);
+        ui_elements.sys_detail = create_label(sys_card, "Uptime: 0s", COLOR_GRAY, &lv_font_montserrat_12);
+        lv_obj_align(ui_elements.sys_detail, LV_ALIGN_TOP_LEFT, 0, 44);
         
         /* Memory Card (bottom-right) */
         lv_obj_t *mem_card = create_card(scr, 160, 85, 160, 85);
-        ui_elements.mem_title = create_label(mem_card, LV_SYMBOL_SD_CARD " Memory", COLOR_BLUE);
+        ui_elements.mem_title = create_label(mem_card, LV_SYMBOL_SD_CARD " Memory", COLOR_BLUE, &lv_font_montserrat_16);
         lv_obj_align(ui_elements.mem_title, LV_ALIGN_TOP_LEFT, 0, 0);
         
-        ui_elements.mem_status = create_label(mem_card, "0 KB Free", COLOR_GRAY);
-        lv_obj_align(ui_elements.mem_status, LV_ALIGN_TOP_LEFT, 0, 20);
+        ui_elements.mem_status = create_label(mem_card, "0 KB Free", COLOR_GRAY, &lv_font_montserrat_14);
+        lv_obj_align(ui_elements.mem_status, LV_ALIGN_TOP_LEFT, 0, 22);
         
-        ui_elements.mem_detail = create_label(mem_card, "0% Used", COLOR_GRAY);
-        lv_obj_align(ui_elements.mem_detail, LV_ALIGN_TOP_LEFT, 0, 40);
+        ui_elements.mem_detail = create_label(mem_card, "0% Used", COLOR_GRAY, &lv_font_montserrat_12);
+        lv_obj_align(ui_elements.mem_detail, LV_ALIGN_TOP_LEFT, 0, 44);
 
         lvgl_port_unlock();
     }
