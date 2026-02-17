@@ -276,8 +276,18 @@ void display_manager_update_status(const display_status_t *status)
         s_state.tg = status->telegram_connected;
         snprintf(s_state.status, sizeof(s_state.status), "%s", status->system_state);
         
-        // TODO: Update four-grid UI with new status
-        display_ui_update(status->wifi_connected, status->telegram_connected, status->system_state);
+        // Convert display_status_t to ui_status_t and update dashboard
+        ui_status_t ui_status = {
+            .wifi_connected = status->wifi_connected,
+            .wifi_rssi = status->wifi_rssi,
+            .ip_address = status->ip_address,
+            .telegram_connected = status->telegram_connected,
+            .system_state = status->system_state,
+            .uptime_seconds = status->uptime_seconds,
+            .free_heap = status->free_heap,
+            .total_heap = status->total_heap
+        };
+        display_ui_update_dashboard(&ui_status);
     }
 }
 
