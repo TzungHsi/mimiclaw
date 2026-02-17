@@ -86,6 +86,15 @@
 #define MIMI_CONTEXT_BUF_SIZE        (16 * 1024)
 #define MIMI_SESSION_MAX_MSGS        20
 
+/* Cron */
+#define MIMI_CRON_FILE               "/spiffs/config/cron.json"
+#define MIMI_CRON_CHECK_INTERVAL_MS  (30 * 1000)
+#define MIMI_CRON_MAX_JOBS           8
+
+/* Heartbeat */
+#define MIMI_HEARTBEAT_FILE          "/spiffs/config/HEARTBEAT.md"
+#define MIMI_HEARTBEAT_INTERVAL_MS   (30 * 60 * 1000)
+
 /* WebSocket Gateway */
 #define MIMI_WS_PORT                 18789
 #define MIMI_WS_MAX_CLIENTS          4

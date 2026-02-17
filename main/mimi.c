@@ -25,6 +25,8 @@
 #include "display/display_manager.h"
 #include "display/telegram_status.h"
 #include "button_driver.h"
+#include "cron/cron_service.h"
+#include "heartbeat/heartbeat.h"
 
 static const char *TAG = "mimi";
 
@@ -125,6 +127,10 @@ void app_main(void)
     /* Initialize Telegram status */
     telegram_status_set(TG_STATUS_OFFLINE);
 
+    /* Initialize Cron and Heartbeat */
+    ESP_ERROR_CHECK(cron_service_init());
+    ESP_ERROR_CHECK(heartbeat_init());
+
     /* Start Serial CLI first (works without WiFi) */
     ESP_ERROR_CHECK(serial_cli_init());
     display_manager_set_status("Waiting for WiFi...");
@@ -142,6 +148,11 @@ void app_main(void)
             telegram_status_set(TG_STATUS_READY);
             ESP_ERROR_CHECK(agent_loop_start());
             ESP_ERROR_CHECK(ws_server_start());
+            
+            /* Start Cron and Heartbeat services */
+            ESP_ERROR_CHECK(cron_service_start());
+            ESP_ERROR_CHECK(heartbeat_start());
+            
             display_manager_update(true, true, "System Ready");
 
             /* Outbound dispatch task */

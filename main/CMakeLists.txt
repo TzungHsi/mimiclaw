@@ -21,6 +21,8 @@ idf_component_register(
         "display/display_ui.c"
         "display/telegram_status.c"
         "button_driver.c"
+        "cron/cron_service.c"
+        "heartbeat/heartbeat.c"
     INCLUDE_DIRS
         "."
     REQUIRES
