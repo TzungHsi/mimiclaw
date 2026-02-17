@@ -45,28 +45,27 @@ static esp_err_t sync_time_sntp(char *out, size_t out_size)
     /* Wait for time to be set (max 10 seconds) */
     int retry = 0;
     const int max_retry = 100;  // 100 * 100ms = 10 seconds
+    time_t now = 0;
+    struct tm timeinfo;
     
-    while (esp_sntp_get_sync_status() == SNTP_SYNC_STATUS_RESET && retry < max_retry) {
+    while (retry < max_retry) {
+        time(&now);
+        localtime_r(&now, &timeinfo);
+        
+        /* Check if time is valid (after 2020) */
+        if (timeinfo.tm_year >= (2020 - 1900)) {
+            ESP_LOGI(TAG, "Time sync completed after %d ms", retry * 100);
+            break;
+        }
+        
         ESP_LOGD(TAG, "Waiting for system time to be set... (%d/%d)", retry + 1, max_retry);
         vTaskDelay(pdMS_TO_TICKS(100));
         retry++;
     }
     
-    if (esp_sntp_get_sync_status() != SNTP_SYNC_STATUS_COMPLETED) {
+    if (timeinfo.tm_year < (2020 - 1900)) {
         ESP_LOGE(TAG, "Failed to sync time via SNTP (timeout)");
         return ESP_ERR_TIMEOUT;
-    }
-    
-    /* Get current time */
-    time_t now;
-    struct tm timeinfo;
-    time(&now);
-    localtime_r(&now, &timeinfo);
-    
-    /* Check if time is valid (after 2020) */
-    if (timeinfo.tm_year < (2020 - 1900)) {
-        ESP_LOGE(TAG, "Time not set correctly");
-        return ESP_FAIL;
     }
     
     /* Format time string */
