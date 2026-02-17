@@ -1,192 +1,93 @@
 #include "tool_get_time.h"
 #include "mimi_config.h"
-#include "proxy/http_proxy.h"
 
 #include <string.h>
-#include <stdlib.h>
 #include <time.h>
 #include <sys/time.h>
 #include "esp_log.h"
-#include "esp_http_client.h"
-#include "esp_crt_bundle.h"
+#include "esp_sntp.h"
 
 static const char *TAG = "tool_time";
 
-static const char *MONTHS[] = {
-    "Jan","Feb","Mar","Apr","May","Jun",
-    "Jul","Aug","Sep","Oct","Nov","Dec"
-};
-
-/* Parse "Sat, 01 Feb 2025 10:25:00 GMT" → set system clock, return formatted string */
-static bool parse_and_set_time(const char *date_str, char *out, size_t out_size)
+/* SNTP sync callback */
+static void time_sync_notification_cb(struct timeval *tv)
 {
-    int day, year, hour, min, sec;
-    char mon_str[4] = {0};
-
-    if (sscanf(date_str, "%*[^,], %d %3s %d %d:%d:%d",
-               &day, mon_str, &year, &hour, &min, &sec) != 6) {
-        return false;
-    }
-
-    int mon = -1;
-    for (int i = 0; i < 12; i++) {
-        if (strcmp(mon_str, MONTHS[i]) == 0) { mon = i; break; }
-    }
-    if (mon < 0) return false;
-
-    struct tm tm = {
-        .tm_sec = sec, .tm_min = min, .tm_hour = hour,
-        .tm_mday = day, .tm_mon = mon, .tm_year = year - 1900,
-    };
-
-    /* Convert UTC to epoch — mktime expects local, so temporarily set UTC */
-    setenv("TZ", "UTC0", 1);
-    tzset();
-    time_t t = mktime(&tm);
-
-    /* Restore timezone */
-    setenv("TZ", MIMI_TIMEZONE, 1);
-    tzset();
-
-    if (t < 0) return false;
-
-    struct timeval tv = { .tv_sec = t };
-    settimeofday(&tv, NULL);
-
-    /* Format in local time */
-    struct tm local;
-    localtime_r(&t, &local);
-    strftime(out, out_size, "%Y-%m-%d %H:%M:%S %Z (%A)", &local);
-
-    return true;
+    ESP_LOGI(TAG, "Time synchronized via SNTP");
 }
 
-/* Fetch time via proxy: HEAD request to Taiwan National Time Server, parse Date header */
-static esp_err_t fetch_time_via_proxy(char *out, size_t out_size)
+/* Initialize and sync time via SNTP */
+static esp_err_t sync_time_sntp(char *out, size_t out_size)
 {
-    ESP_LOGI(TAG, "Attempting proxy connection to www.stdtime.gov.tw");
-    proxy_conn_t *conn = proxy_conn_open("www.stdtime.gov.tw", 443, 10000);
-    if (!conn) return ESP_ERR_HTTP_CONNECT;
-
-    const char *req =
-        "HEAD / HTTP/1.1\r\n"
-        "Host: www.stdtime.gov.tw\r\n"
-        "Connection: close\r\n\r\n";
-
-    if (proxy_conn_write(conn, req, strlen(req)) < 0) {
-        proxy_conn_close(conn);
-        return ESP_ERR_HTTP_WRITE_DATA;
-    }
-
-    char buf[1024];
-    int total = 0;
-    while (total < (int)sizeof(buf) - 1) {
-        int n = proxy_conn_read(conn, buf + total, sizeof(buf) - 1 - total, 10000);
-        if (n <= 0) break;
-        total += n;
-        buf[total] = '\0';
-        if (strstr(buf, "\r\n\r\n")) break;
-    }
-    proxy_conn_close(conn);
-
-    /* Find Date header */
-    char *date_hdr = strcasestr(buf, "\r\nDate: ");
-    if (!date_hdr) return ESP_ERR_NOT_FOUND;
-    date_hdr += 8;
-
-    char *eol = strstr(date_hdr, "\r\n");
-    if (!eol) return ESP_ERR_NOT_FOUND;
-
-    char date_val[64];
-    size_t dlen = eol - date_hdr;
-    if (dlen >= sizeof(date_val)) return ESP_ERR_NOT_FOUND;
-    memcpy(date_val, date_hdr, dlen);
-    date_val[dlen] = '\0';
-
-    if (!parse_and_set_time(date_val, out, out_size)) return ESP_FAIL;
-    return ESP_OK;
-}
-
-/* Fetch time via direct HTTPS */
-static esp_err_t fetch_time_direct(char *out, size_t out_size)
-{
-    ESP_LOGI(TAG, "Attempting direct HTTPS connection to www.stdtime.gov.tw");
+    ESP_LOGI(TAG, "Initializing SNTP time synchronization...");
     
-    esp_http_client_config_t config = {
-        .url = "https://www.stdtime.gov.tw/",
-        .method = HTTP_METHOD_HEAD,
-        .timeout_ms = 10000,
-        .crt_bundle_attach = esp_crt_bundle_attach,
-    };
-
-    esp_http_client_handle_t client = esp_http_client_init(&config);
-    if (!client) {
-        ESP_LOGE(TAG, "Failed to init HTTP client");
-        return ESP_FAIL;
-    }
-
-    ESP_LOGI(TAG, "Performing HTTP request...");
-    esp_err_t err = esp_http_client_perform(client);
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "HTTP perform failed: %s", esp_err_to_name(err));
-        esp_http_client_cleanup(client);
-        return err;
-    }
-
-    int status_code = esp_http_client_get_status_code(client);
-    ESP_LOGI(TAG, "HTTP response status: %d", status_code);
-
-    /* Get Date header */
-    char *date_ptr = NULL;
-    err = esp_http_client_get_header(client, "Date", &date_ptr);
-    
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to get Date header: %s", esp_err_to_name(err));
-        esp_http_client_cleanup(client);
-        return ESP_ERR_NOT_FOUND;
+    /* Stop SNTP if already running */
+    if (esp_sntp_enabled()) {
+        ESP_LOGI(TAG, "SNTP already running, restarting...");
+        esp_sntp_stop();
     }
     
-    if (!date_ptr || date_ptr[0] == '\0') {
-        ESP_LOGE(TAG, "Date header is empty");
-        esp_http_client_cleanup(client);
-        return ESP_ERR_NOT_FOUND;
+    /* Configure SNTP */
+    esp_sntp_setoperatingmode(SNTP_OPMODE_POLL);
+    
+    /* Use Taiwan NTP servers for best performance */
+    esp_sntp_setservername(0, "time.stdtime.gov.tw");  // Taiwan National Time Server
+    esp_sntp_setservername(1, "tock.stdtime.gov.tw");  // Taiwan backup server
+    esp_sntp_setservername(2, "watch.stdtime.gov.tw"); // Taiwan backup server
+    esp_sntp_setservername(3, "tick.stdtime.gov.tw");  // Taiwan backup server
+    
+    /* Set notification callback */
+    esp_sntp_set_time_sync_notification_cb(time_sync_notification_cb);
+    
+    /* Start SNTP */
+    esp_sntp_init();
+    ESP_LOGI(TAG, "SNTP initialized, waiting for time sync...");
+    
+    /* Wait for time to be set (max 10 seconds) */
+    int retry = 0;
+    const int max_retry = 100;  // 100 * 100ms = 10 seconds
+    
+    while (esp_sntp_get_sync_status() == SNTP_SYNC_STATUS_RESET && retry < max_retry) {
+        ESP_LOGD(TAG, "Waiting for system time to be set... (%d/%d)", retry + 1, max_retry);
+        vTaskDelay(pdMS_TO_TICKS(100));
+        retry++;
     }
     
-    ESP_LOGI(TAG, "Got Date header: %s", date_ptr);
+    if (esp_sntp_get_sync_status() != SNTP_SYNC_STATUS_COMPLETED) {
+        ESP_LOGE(TAG, "Failed to sync time via SNTP (timeout)");
+        return ESP_ERR_TIMEOUT;
+    }
     
-    /* Copy the date string before cleanup */
-    char date_val[64];
-    strncpy(date_val, date_ptr, sizeof(date_val) - 1);
-    date_val[sizeof(date_val) - 1] = '\0';
-    esp_http_client_cleanup(client);
-
-    ESP_LOGI(TAG, "Parsing date: %s", date_val);
-    if (!parse_and_set_time(date_val, out, out_size)) {
-        ESP_LOGE(TAG, "Failed to parse date string");
+    /* Get current time */
+    time_t now;
+    struct tm timeinfo;
+    time(&now);
+    localtime_r(&now, &timeinfo);
+    
+    /* Check if time is valid (after 2020) */
+    if (timeinfo.tm_year < (2020 - 1900)) {
+        ESP_LOGE(TAG, "Time not set correctly");
         return ESP_FAIL;
     }
     
-    ESP_LOGI(TAG, "Successfully set system time");
+    /* Format time string */
+    strftime(out, out_size, "%Y-%m-%d %H:%M:%S %Z (%A)", &timeinfo);
+    
+    ESP_LOGI(TAG, "System time set successfully: %s", out);
     return ESP_OK;
 }
 
 esp_err_t tool_get_time_execute(const char *input_json, char *output, size_t output_size)
 {
-    ESP_LOGI(TAG, "Fetching current time...");
-
-    esp_err_t err;
-    if (http_proxy_is_enabled()) {
-        err = fetch_time_via_proxy(output, output_size);
-    } else {
-        err = fetch_time_direct(output, output_size);
-    }
-
+    ESP_LOGI(TAG, "Fetching current time via SNTP...");
+    
+    esp_err_t err = sync_time_sntp(output, output_size);
+    
     if (err == ESP_OK) {
         ESP_LOGI(TAG, "Time: %s", output);
     } else {
-        snprintf(output, output_size, "Error: failed to fetch time (%s)", esp_err_to_name(err));
+        snprintf(output, output_size, "Error: failed to sync time via SNTP (%s)", esp_err_to_name(err));
         ESP_LOGE(TAG, "%s", output);
     }
-
+    
     return err;
 }
