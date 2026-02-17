@@ -218,10 +218,11 @@ static void status_update_task(void *arg)
         status.wifi_rssi = -50;  // TODO: Implement RSSI reading
         const char *ip = wifi_manager_get_ip();
         if (ip) {
-            strncpy((char*)status.ip_address, ip, 15);
-            status.ip_address = ip;
+            strncpy(status.ip_address, ip, 15);
+            status.ip_address[15] = '\0';  // Ensure null termination
         } else {
-            status.ip_address = "0.0.0.0";
+            strncpy(status.ip_address, "0.0.0.0", 15);
+            status.ip_address[15] = '\0';
         }
         
         /* Telegram status */
